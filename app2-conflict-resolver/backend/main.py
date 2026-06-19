@@ -58,7 +58,7 @@ class ResolutionPayload(BaseModel):
     resolved_by: str = "Expert"
 
 
-RESOLUTIONS_PATH = Path(__file__).parent / "resolutions.json"
+RESOLUTIONS_PATH = Path(os.environ.get("RESOLUTIONS_PATH", Path(__file__).parent / "resolutions.json"))
 
 
 def load_resolutions() -> dict:

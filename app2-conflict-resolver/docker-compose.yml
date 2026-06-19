@@ -1,0 +1,22 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - RESOLUTIONS_PATH=/app/data/resolutions.json
+    volumes:
+      - ./data:/app/data
+
+  web:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "8084:80"
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend

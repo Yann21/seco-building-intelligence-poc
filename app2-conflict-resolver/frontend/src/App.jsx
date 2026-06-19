@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-const API = 'http://localhost:8002'
+const API = import.meta.env.VITE_API_BASE ?? 'http://localhost:8002'
 
 const TYPE_LABELS = {
   contradiction: 'Contradiction directe',
@@ -83,6 +83,11 @@ export default function App() {
   const [data, setData] = useState(null)
   const [resolutions, setResolutions] = useState({})
   const [loading, setLoading] = useState(true)
+  const [dark, setDark] = useState(true)
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('light', !dark)
+  }, [dark])
 
   useEffect(() => {
     Promise.all([
@@ -129,6 +134,12 @@ export default function App() {
           {bySeverity.majeur > 0 && <span className="stat-chip majeur">↑ {bySeverity.majeur} majeur{bySeverity.majeur > 1 ? 's' : ''}</span>}
           {bySeverity.mineur > 0 && <span className="stat-chip mineur">· {bySeverity.mineur} mineur{bySeverity.mineur > 1 ? 's' : ''}</span>}
           {resolvedCount > 0 && <span className="stat-chip resolved">✓ {resolvedCount} résolu{resolvedCount > 1 ? 's' : ''}</span>}
+          <button className="theme-toggle" onClick={() => setDark(d => !d)} aria-label="Toggle theme">
+            <span className="theme-toggle-label">{dark ? '☀' : '☾'}</span>
+            <div className={`toggle-track ${dark ? '' : 'on'}`}>
+              <div className="toggle-thumb" />
+            </div>
+          </button>
         </div>
       </div>
       <div className="layout">
