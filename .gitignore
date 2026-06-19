@@ -1,0 +1,15 @@
+assignment.txt
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Data (raw + processed are large, reproducible from fetch scripts)
+app1-zone-map/data/raw/
+app1-zone-map/data/processed/
