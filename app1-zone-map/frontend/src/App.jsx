@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import ZonePanel from './ZonePanel'
 
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8001'
+
 const LEGEND = [
   { color: '#fde68a', label: 'HAB 1 – Résidentiel faible densité' },
   { color: '#fbbf24', label: 'HAB 2 – Résidentiel moyen' },
@@ -39,7 +41,7 @@ export default function App() {
 
     const renderer = L.canvas({ padding: 0.5 })
 
-    fetch('http://localhost:8001/api/geojson/zonage')
+    fetch(`${API_BASE}/api/geojson/zonage`)
       .then(r => r.json())
       .then(data => {
         L.geoJSON(data, {
@@ -53,7 +55,7 @@ export default function App() {
           }),
         }).addTo(map)
 
-        fetch('http://localhost:8001/api/geojson/nq_pap')
+        fetch(`${API_BASE}/api/geojson/nq_pap`)
           .then(r => r.json())
           .then(nqData => {
             L.geoJSON(nqData, {
@@ -88,7 +90,7 @@ export default function App() {
       setZoneData(null)
 
       try {
-        const res = await fetch(`http://localhost:8001/api/zone?lat=${lat}&lng=${lng}`)
+        const res = await fetch(`${API_BASE}/api/zone?lat=${lat}&lng=${lng}`)
         if (!res.ok) {
           setZoneData({ error: 'Aucune zone trouvée à cet emplacement.' })
         } else {

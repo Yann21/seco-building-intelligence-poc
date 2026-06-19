@@ -1,4 +1,6 @@
 assignment.txt
+.env
+*.json.key
 
 # Python
 __pycache__/
