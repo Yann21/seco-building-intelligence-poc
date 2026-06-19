@@ -15,3 +15,9 @@ dist/
 # Data (raw + processed are large, reproducible from fetch scripts)
 app1-zone-map/data/raw/
 app1-zone-map/data/processed/
+
+# App2 generated cache (reproducible by running analyze.py)
+app2-conflict-resolver/backend/extracted.json
+app2-conflict-resolver/backend/analysis.json
+app2-conflict-resolver/backend/resolutions.json
+app2-conflict-resolver/backend/raw_response.txt
