@@ -107,6 +107,7 @@ export default function App() {
   }, [])
 
   return (
+    <>
     <div className="app">
       <div className="map-container">
         <div ref={mapRef} style={{ height: '100%', width: '100%' }} />
@@ -161,5 +162,9 @@ export default function App() {
         </div>
       </div>
     </div>
+    <div className="credits-bar">
+      Vision &amp; concept · <strong>Clément Gérard</strong> (M3) &nbsp;·&nbsp; Implémentation · <strong>Yann Hoffmann</strong>
+    </div>
+    </>
   )
 }

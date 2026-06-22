@@ -28,6 +28,7 @@ function ConflictCard({ conflict, resolution, onResolve }) {
           <div className="conflict-type">
             {TYPE_LABELS[conflict.type] || conflict.type}
             {isResolved && <span className="resolved-tag" style={{ marginLeft: 8 }}>✓ Résolu</span>}
+            {conflict.quote_verified === false && <span className="unverified-tag" title="La citation n'a pas pu être retrouvée dans le document source" style={{ marginLeft: 8 }}>⚠ citation non vérifiée</span>}
           </div>
         </div>
         <span className={`expand-icon ${open ? 'open' : ''}`}>›</span>
@@ -165,6 +166,9 @@ export default function App() {
             </div>
           </div>
         </div>
+      </div>
+      <div className="credits-bar">
+        Vision &amp; concept · <strong>Clément Gérard</strong> (M3) &nbsp;·&nbsp; Implémentation · <strong>Yann Hoffmann</strong>
       </div>
     </div>
   )

@@ -519,3 +519,18 @@ html, body, #root {
 :root.light .resolution-meta { color: #166534; }
 
 :root.light .resolved-tag { background: #dcfce7; border-color: #86efac; color: #166534; }
+
+.credits-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: 10px 16px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  text-align: center;
+  letter-spacing: 0.3px;
+}

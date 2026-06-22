@@ -1,4 +1,5 @@
 """Extract text from PDFs and cache as JSON."""
+import hashlib
 import json
 from pathlib import Path
 import pdfplumber
@@ -44,10 +45,12 @@ def extract_all() -> dict:
                 text = page.extract_text()
                 if text and text.strip():
                     pages.append({"page": i + 1, "text": text})
+        full_text = "\n\n".join(p["text"] for p in pages)
         result[meta["id"]] = {
             **meta,
             "pages": pages,
-            "full_text": "\n\n".join(p["text"] for p in pages),
+            "full_text": full_text,
+            "content_hash": hashlib.sha256(full_text.encode()).hexdigest()[:12],
         }
         print(f"  {meta['id']}: {len(pages)} pages extracted")
     return result

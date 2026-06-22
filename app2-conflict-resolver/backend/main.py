@@ -13,7 +13,7 @@ from pydantic import BaseModel
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
 sys.path.insert(0, str(Path(__file__).parent))
-from analyze import get_analysis
+from analyze import get_analysis, read_usage_log
 
 _analysis: dict | None = None
 
@@ -49,7 +49,14 @@ def list_conflicts():
         "count": len(_analysis.get("conflicts", [])),
         "conflicts": _analysis.get("conflicts", []),
         "documents": _analysis.get("documents", {}),
+        "meta": _analysis.get("_meta", {}),
     }
+
+
+@app.get("/api/usage")
+def get_usage():
+    """Token usage and cost summary across all LLM calls."""
+    return read_usage_log()
 
 
 class ResolutionPayload(BaseModel):

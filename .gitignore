@@ -16,8 +16,10 @@ dist/
 app1-zone-map/data/raw/
 app1-zone-map/data/processed/
 
-# App2 generated cache (reproducible by running analyze.py)
+# App2 generated cache (reproducible by running analyze.py / llm_benchmark.py)
 app2-conflict-resolver/backend/extracted.json
 app2-conflict-resolver/backend/analysis.json
 app2-conflict-resolver/backend/resolutions.json
 app2-conflict-resolver/backend/raw_response.txt
+app2-conflict-resolver/backend/cache/
+app2-conflict-resolver/backend/usage_log.jsonl

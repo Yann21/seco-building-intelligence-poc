@@ -1,125 +1,392 @@
-"""Run Claude conflict analysis over extracted documents and cache the result."""
+"""
+Pairwise conflict analysis over regulatory documents.
+
+Architecture: each document pair is analyzed independently and cached by
+content fingerprint + prompt version. Adding a new document triggers only
+O(n) new LLM calls (new_doc × existing_docs), not a full re-analysis.
+
+Robustness stack:
+  - Pydantic schema validation on every LLM response
+  - Quote grounding: verifies cited quotes appear in source text
+  - Retry with exponential backoff on transient API errors
+  - Append-only usage_log.jsonl for cost tracking
+"""
+import hashlib
 import json
 import os
+import time
+import unicodedata
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Literal
+
 import anthropic
 import json_repair
+from pydantic import BaseModel, field_validator
+
 from extract import get_extracted
 
-CACHE_PATH = Path(__file__).parent / "analysis.json"
+# ── Config ────────────────────────────────────────────────────────────────────
+
+MODEL = "claude-sonnet-4-6"
+PROMPT_VERSION = "v2"  # bump to invalidate all pair caches
+
+COST_INPUT_PER_TOKEN = 3 / 1_000_000   # $3 / MTok
+COST_OUTPUT_PER_TOKEN = 15 / 1_000_000  # $15 / MTok
+
+CACHE_DIR = Path(__file__).parent / "cache"
+USAGE_LOG = Path(__file__).parent / "usage_log.jsonl"
+ANALYSIS_CACHE = Path(__file__).parent / "analysis.json"
+
+# ── Pydantic output schema ─────────────────────────────────────────────────────
+
+class ConflictSource(BaseModel):
+    doc_id: str
+    article: str
+    quote: str = ""
+    value: str | None = None
+
+
+class Conflict(BaseModel):
+    id: str
+    title: str
+    topic: str
+    severity: Literal["critique", "majeur", "mineur"]
+    type: Literal["contradiction", "lacune", "ambiguïté", "ambiguité"]
+    description: str
+    sources: list[ConflictSource]
+    recommendation: str
+    practical_impact: str | None = None
+    quote_verified: bool = False
+
+    @field_validator("severity", mode="before")
+    @classmethod
+    def normalise_severity(cls, v: str) -> str:
+        return v.lower().strip()
+
+
+class PairResult(BaseModel):
+    conflicts: list[Conflict]
+
+
+# ── Prompts ───────────────────────────────────────────────────────────────────
 
 SYSTEM_PROMPT = """Tu es un expert en réglementation de la construction et de la sécurité au travail au Luxembourg.
-Tu analyses plusieurs documents réglementaires officiels pour identifier les conflits, lacunes et incohérences
+Tu analyses des paires de documents réglementaires officiels pour identifier les conflits, lacunes et incohérences
 qui peuvent affecter la conception d'un bâtiment ou d'un chantier.
 
 Pour chaque conflit identifié, tu fournis:
 1. Le sujet précis du conflit
-2. Ce que dit chaque document (avec numéro d'article et valeur exacte)
+2. Ce que dit chaque document (avec numéro d'article et citation exacte)
 3. La recommandation: quelle valeur appliquer (toujours la plus contraignante)
 4. Le niveau de criticité (critique / majeur / mineur)
-5. Le type de conflit (contradiction directe / lacune / ambiguïté terminologique)
+5. Le type de conflit (contradiction / lacune / ambiguïté)
 """
 
-ANALYSIS_PROMPT = """Voici les textes de trois documents réglementaires luxembourgeois sur l'éclairage:
+PAIR_PROMPT = """Voici deux documents réglementaires luxembourgeois:
 
 {doc_sections}
 
 ---
 
-Analyse ces trois documents et identifie TOUS les conflits, contradictions, lacunes et ambiguïtés.
-Concentre-toi particulièrement sur:
+Analyse ces deux documents et identifie TOUS les conflits, contradictions, lacunes et ambiguïtés entre eux.
+Concentre-toi sur:
 - Les valeurs numériques contradictoires (lux, durées, fréquences)
 - Les ambiguïtés terminologiques qui peuvent mener à des erreurs de conception
 - Les lacunes (un document couvre un cas que l'autre ignore)
-- Les exigences qui ne sont pas les plus contraignantes selon les contextes
+- Les exigences contradictoires pour un même contexte
 
-Réponds en JSON strict avec ce format:
+Si tu n'identifies aucun conflit réel entre ces deux documents, retourne une liste vide.
+
+Réponds en JSON strict:
 {{
-  "summary": "Résumé de l'analyse en 2-3 phrases",
   "conflicts": [
     {{
       "id": "C1",
       "title": "Titre court du conflit",
-      "topic": "Catégorie: maintenance | illuminance | terminologie | autonomie | délai",
+      "topic": "maintenance | illuminance | terminologie | autonomie | délai",
       "severity": "critique | majeur | mineur",
       "type": "contradiction | lacune | ambiguïté",
-      "description": "Description claire du problème pour un architecte",
+      "description": "Description claire du problème pour un architecte ou ingénieur",
       "sources": [
         {{
-          "doc_id": "ITM-CL-55.2",
+          "doc_id": "<id exact du document>",
           "article": "Art. X.Y",
-          "quote": "Citation exacte du document",
+          "quote": "Citation exacte du texte source",
           "value": "Valeur ou exigence spécifique"
         }}
       ],
-      "recommendation": "Ce qu'il faut appliquer et pourquoi (principe de la valeur la plus contraignante)",
-      "practical_impact": "Impact concret sur la conception ou la maintenance du bâtiment"
+      "recommendation": "Ce qu'il faut appliquer et pourquoi",
+      "practical_impact": "Impact concret sur la conception ou la maintenance"
     }}
   ]
 }}
 """
 
 
-def run_analysis(docs: dict) -> dict:
-    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+# ── Quote grounding ────────────────────────────────────────────────────────────
 
-    doc_sections = ""
-    for doc_id, doc in docs.items():
-        doc_sections += f"\n\n{'='*60}\n"
-        doc_sections += f"DOCUMENT: {doc['title']}\n"
-        doc_sections += f"Autorité: {doc['authority']} | Date: {doc['date']}\n"
-        doc_sections += f"Périmètre: {doc['scope']}\n"
-        doc_sections += f"{'='*60}\n\n"
-        doc_sections += doc["full_text"]
+def _normalise(text: str) -> str:
+    """Lowercase, strip accents, collapse whitespace."""
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
+    return " ".join(text.lower().split())
 
-    prompt = ANALYSIS_PROMPT.format(doc_sections=doc_sections)
 
-    print("Running Claude analysis...")
-    message = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=8000,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}],
+def verify_quotes(conflicts: list[Conflict], docs: dict) -> list[Conflict]:
+    """
+    Fuzzy-check that each cited quote's words appear in the source document.
+    Threshold: 65% word overlap (tolerates OCR noise and minor text variations).
+    Conflicts with unverifiable quotes are flagged, not removed.
+    """
+    for conflict in conflicts:
+        all_ok = True
+        for src in conflict.sources:
+            doc = docs.get(src.doc_id)
+            if not doc or not src.quote:
+                continue
+            doc_text = _normalise(doc.get("full_text", ""))
+            quote_words = set(_normalise(src.quote).split())
+            if len(quote_words) < 4:
+                continue  # too short to verify meaningfully
+            found = sum(1 for w in quote_words if w in doc_text)
+            if found / len(quote_words) < 0.65:
+                all_ok = False
+        conflict.quote_verified = all_ok
+    return conflicts
+
+
+# ── Cost tracking ─────────────────────────────────────────────────────────────
+
+def _log_usage(pair_id: str, usage: anthropic.types.Usage) -> float:
+    cost = (
+        usage.input_tokens * COST_INPUT_PER_TOKEN
+        + usage.output_tokens * COST_OUTPUT_PER_TOKEN
     )
-
-    raw = message.content[0].text
-    # Extract JSON block from response
-    if "```json" in raw:
-        raw = raw.split("```json")[1].split("```")[0]
-    elif "```" in raw:
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    # Find the outermost JSON object
-    start = raw.find("{")
-    end = raw.rfind("}") + 1
-    if start != -1 and end > start:
-        raw = raw[start:end]
-    raw = raw.strip()
-
-    result = json_repair.repair_json(raw, return_objects=True)
-    result["documents"] = {
-        doc_id: {k: v for k, v in doc.items() if k != "pages" and k != "full_text"}
-        for doc_id, doc in docs.items()
+    entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "pair": pair_id,
+        "model": MODEL,
+        "input_tokens": usage.input_tokens,
+        "output_tokens": usage.output_tokens,
+        "cost_usd": round(cost, 6),
     }
+    with USAGE_LOG.open("a") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    return cost
+
+
+def read_usage_log() -> dict:
+    if not USAGE_LOG.exists():
+        return {"entries": [], "total_cost_usd": 0.0, "total_input_tokens": 0, "total_output_tokens": 0, "call_count": 0}
+    entries = [json.loads(l) for l in USAGE_LOG.read_text().splitlines() if l.strip()]
+    return {
+        "entries": entries,
+        "total_cost_usd": round(sum(e["cost_usd"] for e in entries), 4),
+        "total_input_tokens": sum(e["input_tokens"] for e in entries),
+        "total_output_tokens": sum(e["output_tokens"] for e in entries),
+        "call_count": len(entries),
+    }
+
+
+# ── Per-pair analysis ─────────────────────────────────────────────────────────
+
+def _doc_hash(doc: dict) -> str:
+    return hashlib.sha256(doc["full_text"].encode()).hexdigest()[:12]
+
+
+def _pair_cache_path(doc_a: dict, doc_b: dict) -> Path:
+    CACHE_DIR.mkdir(exist_ok=True)
+    key = "_".join(sorted([_doc_hash(doc_a), _doc_hash(doc_b)]))
+    return CACHE_DIR / f"{key}_{PROMPT_VERSION}.json"
+
+
+def _extract_json_block(text: str) -> str:
+    if "```json" in text:
+        text = text.split("```json")[1].split("```")[0]
+    elif "```" in text:
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+    start, end = text.find("{"), text.rfind("}") + 1
+    if start != -1 and end > start:
+        return text[start:end]
+    return text.strip()
+
+
+def run_pair(doc_a: dict, doc_b: dict, client: anthropic.Anthropic, force: bool = False) -> dict:
+    """Analyze one document pair, using cache unless force=True or content changed."""
+    cache_path = _pair_cache_path(doc_a, doc_b)
+    pair_id = f"{doc_a['id']} × {doc_b['id']}"
+
+    if cache_path.exists() and not force:
+        print(f"  cache hit:  {pair_id}")
+        return json.loads(cache_path.read_text())
+
+    print(f"  analyzing:  {pair_id}")
+    doc_sections = ""
+    for doc in [doc_a, doc_b]:
+        doc_sections += (
+            f"\n\n{'='*60}\n"
+            f"DOCUMENT: {doc['title']}\n"
+            f"Autorité: {doc['authority']} | Date: {doc['date']}\n"
+            f"{'='*60}\n\n"
+            f"{doc['full_text']}"
+        )
+
+    prompt = PAIR_PROMPT.format(doc_sections=doc_sections)
+
+    # Retry with exponential backoff
+    message = None
+    last_err = None
+    for attempt in range(3):
+        try:
+            message = client.messages.create(
+                model=MODEL,
+                max_tokens=4000,
+                system=SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            break
+        except (anthropic.RateLimitError, anthropic.InternalServerError) as e:
+            last_err = e
+            wait = 2 ** attempt
+            print(f"  retry {attempt + 1}/3 in {wait}s ({e})")
+            time.sleep(wait)
+
+    if message is None:
+        raise last_err  # type: ignore[misc]
+
+    cost = _log_usage(pair_id, message.usage)
+
+    raw = _extract_json_block(message.content[0].text)
+    data = json_repair.repair_json(raw, return_objects=True)
+
+    # Pydantic validation — degrade gracefully on schema errors
+    try:
+        parsed = PairResult(**data)
+        conflicts = [c.model_dump() for c in parsed.conflicts]
+    except Exception as e:
+        print(f"  schema warning ({pair_id}): {e}")
+        conflicts = data.get("conflicts", []) if isinstance(data, dict) else []
+
+    result = {
+        "conflicts": conflicts,
+        "_pair_id": pair_id,
+        "_cost_usd": cost,
+        "_prompt_version": PROMPT_VERSION,
+        "_cached_at": datetime.now(timezone.utc).isoformat(),
+    }
+    cache_path.write_text(json.dumps(result, ensure_ascii=False, indent=2))
     return result
 
 
-def get_analysis(force: bool = False) -> dict:
-    if CACHE_PATH.exists() and not force:
-        return json.loads(CACHE_PATH.read_text())
+# ── Merge & top-level entry point ─────────────────────────────────────────────
 
+def _all_pair_caches_exist(doc_list: list[dict]) -> bool:
+    return all(
+        _pair_cache_path(doc_list[i], doc_list[j]).exists()
+        for i in range(len(doc_list))
+        for j in range(i + 1, len(doc_list))
+    )
+
+
+def get_analysis(force: bool = False) -> dict:
+    """
+    Run pairwise analysis over all documents in the registry.
+
+    With force=False (default): pair caches are reused if doc content unchanged.
+    A fast path serves from analysis.json when all pair caches are warm and
+    the prompt version matches — no API calls on warm restarts.
+    With force=True: all pair caches are busted and Claude is called for every pair.
+
+    Cache invalidation is content-addressed: changing a PDF's bytes changes its
+    hash, which misses the pair cache and triggers re-analysis only for pairs
+    involving that document.
+    """
     docs = get_extracted()
-    result = run_analysis(docs)
-    CACHE_PATH.write_text(json.dumps(result, ensure_ascii=False, indent=2))
-    print("Analysis cached to analysis.json")
+
+    # Fast path: serve from analysis.json when everything is already up-to-date
+    if not force and ANALYSIS_CACHE.exists():
+        try:
+            cached = json.loads(ANALYSIS_CACHE.read_text())
+            if (cached.get("_meta", {}).get("prompt_version") == PROMPT_VERSION
+                    and _all_pair_caches_exist(list(docs.values()))):
+                return cached
+        except Exception:
+            pass
+
+    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+
+    doc_list = list(docs.values())
+    all_conflicts: list[dict] = []
+    total_cost = 0.0
+
+    for i in range(len(doc_list)):
+        for j in range(i + 1, len(doc_list)):
+            pair = run_pair(doc_list[i], doc_list[j], client, force=force)
+            # Prefix conflict IDs with pair identifiers to avoid collisions
+            prefix = f"{doc_list[i]['id'][:8]}-{doc_list[j]['id'][:8]}"
+            for idx, c in enumerate(pair["conflicts"]):
+                c["id"] = f"{prefix}-{c.get('id', str(idx))}"
+            all_conflicts.extend(pair["conflicts"])
+            total_cost += pair.get("_cost_usd", 0.0)
+
+    # Pydantic validation pass — filter out malformed conflicts
+    validated: list[Conflict] = []
+    for c in all_conflicts:
+        try:
+            validated.append(Conflict(**c))
+        except Exception as e:
+            print(f"  skipping malformed conflict: {e}")
+
+    # Quote grounding
+    verified = verify_quotes(validated, docs)
+
+    by_severity = {
+        "critique": sum(1 for c in verified if c.severity == "critique"),
+        "majeur": sum(1 for c in verified if c.severity == "majeur"),
+        "mineur": sum(1 for c in verified if c.severity == "mineur"),
+    }
+    unverified_count = sum(1 for c in verified if not c.quote_verified)
+    n_pairs = len(doc_list) * (len(doc_list) - 1) // 2
+
+    summary = (
+        f"Analyse de {len(doc_list)} documents ({n_pairs} paires): "
+        f"{len(verified)} conflits — "
+        f"{by_severity['critique']} critiques, {by_severity['majeur']} majeurs, {by_severity['mineur']} mineurs."
+    )
+    if unverified_count:
+        summary += f" {unverified_count} conflit(s) avec citations non retrouvées dans les sources."
+
+    result = {
+        "summary": summary,
+        "conflicts": [c.model_dump() for c in verified],
+        "documents": {
+            d["id"]: {k: v for k, v in d.items() if k not in ("pages", "full_text")}
+            for d in doc_list
+        },
+        "_meta": {
+            "prompt_version": PROMPT_VERSION,
+            "model": MODEL,
+            "total_cost_usd": round(total_cost, 4),
+            "analyzed_at": datetime.now(timezone.utc).isoformat(),
+            "quote_verified": len(verified) - unverified_count,
+            "quote_unverified": unverified_count,
+            "pair_count": n_pairs,
+        },
+    }
+
+    ANALYSIS_CACHE.write_text(json.dumps(result, ensure_ascii=False, indent=2))
     return result
 
 
 if __name__ == "__main__":
     import sys
-    force = "--force" in sys.argv
-    result = get_analysis(force=force)
-    print(f"\nFound {len(result['conflicts'])} conflicts")
+    result = get_analysis(force="--force" in sys.argv)
+    meta = result.get("_meta", {})
+    print(f"\nConflicts: {len(result['conflicts'])}")
+    print(f"Cost: ${meta.get('total_cost_usd', 0):.4f}")
+    print(f"Quote verified: {meta.get('quote_verified')}/{len(result['conflicts'])}")
     for c in result["conflicts"]:
-        print(f"  [{c['severity'].upper()}] {c['title']}")
+        tag = "✓" if c.get("quote_verified") else "?"
+        print(f"  [{c['severity'].upper()}][{tag}] {c['title']}")
