@@ -36,15 +36,19 @@ SECO's core value is independent technical control. A conflict between two regul
 
 The naive approach — dump all documents into one prompt — works for a handful of texts but breaks at scale: context grows as O(n), cost grows as O(n), and a single API failure invalidates everything.
 
-The implemented model is a **pairwise analysis matrix**. Each document pair `(A, B)` is analyzed independently and cached by content fingerprint:
+The implemented model is a **cluster-aware pairwise matrix**. Documents are organized into topic subfolders (`documents/lighting/`, `documents/fire-safety/`, …). Only documents within the same cluster are ever compared — cross-topic pairs are never run. Each intra-cluster pair `(A, B)` is analyzed independently and cached by content fingerprint:
 
 ```
 cache key = sha256(text_A)[:12] + "_" + sha256(text_B)[:12] + "_" + PROMPT_VERSION
 ```
 
-When a new document `D` is added to an index of `n` existing documents, only `2n − 1` new LLM calls are needed (the new pairs involving `D`). All existing pair results are cache hits. The merged conflict set is rebuilt from the pair cache — no API calls on warm restarts.
+For a corpus of N documents with average cluster size C:
+- **Total pairs**: N × (C−1) / 2
+- **New pairs when adding 1 document**: C−1 (constant, independent of N)
 
-**Trade-off accepted:** pairwise analysis misses conflicts that only emerge from three-way interactions (A says X, B says Y, C resolves it). In practice those are rare and can be caught in a second-pass synthesis step if needed. The scalability gain is worth it.
+Adding a new lighting regulation to a 3-document cluster triggers 2 API calls, regardless of whether the total corpus contains 10 documents or 10,000. This bounds ingestion cost at O(C), not O(N). All existing pair results are cache hits; the merged conflict set is rebuilt from the pair cache with no API calls on warm restarts.
+
+**Trade-off accepted:** pairwise analysis misses conflicts that only emerge from three-way interactions (A says X, B says Y, C resolves it). In practice those are rare within a single topic cluster and can be caught in a second-pass synthesis step if needed.
 
 ### AI robustness stack
 

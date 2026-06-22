@@ -4,7 +4,18 @@ SECO — API Costing Report Generator
 
 Uses the Anthropic count_tokens API (no inference, no charge) to get exact
 input token counts for each document pair, then estimates output cost and
-extrapolates to larger document corpora.
+extrapolates to larger document corpora using a cluster-based model.
+
+Extrapolation model:
+  Documents are organized into topic clusters (subfolders under documents/).
+  Only intra-cluster pairs are analyzed. For a corpus of N docs with average
+  cluster size C:
+    Total pairs = N * (C-1) / 2
+    New pairs when adding 1 doc = C-1  (constant regardless of total N)
+  This bounds ingestion cost at O(C), not O(N).
+
+The HTML output includes interactive inputs for avg. document size and
+cluster size that dynamically update all extrapolation rows.
 
 Usage:
     python documentation/costing.py
@@ -26,11 +37,10 @@ sys.path.insert(0, str(ROOT / "app2-conflict-resolver" / "backend"))
 from analyze import SYSTEM_PROMPT, PAIR_PROMPT, MODEL, COST_INPUT_PER_TOKEN, COST_OUTPUT_PER_TOKEN
 from extract import get_extracted
 
-# Observed output range: 2k–4k tokens per pair. Using upper bound to be conservative.
-OUTPUT_TOKENS_PER_PAIR_EST = 4000
+OUTPUT_TOKENS_PER_PAIR_EST = 4000  # conservative upper bound (observed: 2k–4k)
 
 
-# ── Measurement ───────────────────────────────────────────────────────────────
+# ── Token counting ─────────────────────────────────────────────────────────────
 
 def build_pair_prompt(doc_a: dict, doc_b: dict) -> str:
     doc_sections = ""
@@ -56,7 +66,7 @@ def count_pair_input_tokens(client: anthropic.Anthropic, doc_a: dict, doc_b: dic
 
 
 def count_prompt_overhead(client: anthropic.Anthropic) -> int:
-    """Tokens used by system prompt + pair prompt template (no doc content)."""
+    """Tokens used by system prompt + pair prompt template with no doc content."""
     resp = client.messages.count_tokens(
         model=MODEL,
         system=SYSTEM_PROMPT,
@@ -65,51 +75,33 @@ def count_prompt_overhead(client: anthropic.Anthropic) -> int:
     return resp.input_tokens
 
 
-# ── Extrapolation ─────────────────────────────────────────────────────────────
-
-def extrapolation_rows(avg_input_per_pair: float, ns: list[int]) -> list[dict]:
+def avg_doc_tokens_from_pairs(pair_stats: list[dict], prompt_overhead: int) -> int:
     """
-    Model: N documents, undirected pairwise matrix.
-    Total pairs for N docs: N*(N-1)/2
-    New pairs when adding the N-th doc to N-1 existing: N-1
-    Cost per call: avg_input * INPUT_RATE + OUTPUT_EST * OUTPUT_RATE
+    Derive average per-document token count from pair measurements.
+    Uses the system of equations: for each pair (A,B), tokens(A) + tokens(B) = pair_input - overhead.
+    With N=3 docs and 3 pairs this is solvable exactly; for larger sets we use the mean.
     """
-    cost_per_pair = (
-        avg_input_per_pair * COST_INPUT_PER_TOKEN
-        + OUTPUT_TOKENS_PER_PAIR_EST * COST_OUTPUT_PER_TOKEN
-    )
-    rows = []
-    for n in ns:
-        total_pairs = n * (n - 1) // 2
-        new_pairs = n - 1  # adding the n-th doc
-        rows.append({
-            "n": n,
-            "total_pairs": total_pairs,
-            "new_pairs_on_add": new_pairs,
-            "cost_one_addition": new_pairs * cost_per_pair,
-            "cost_full_build": total_pairs * cost_per_pair,
-        })
-    return rows
+    # For 3 docs: solve exactly
+    doc_ids = list({p["doc_a"] for p in pair_stats} | {p["doc_b"] for p in pair_stats})
+    if len(doc_ids) == 3 and len(pair_stats) == 3:
+        content = {p["doc_a"] + "+" + p["doc_b"]: p["input_tokens"] - prompt_overhead
+                   for p in pair_stats}
+        vals = list(content.values())
+        total = sum(vals) / 2  # each doc counted twice across 3 pairs
+        return round(total / 3)
+    # General case: average pair content / 2
+    avg_pair_content = sum(p["input_tokens"] - prompt_overhead for p in pair_stats) / len(pair_stats)
+    return round(avg_pair_content / 2)
 
 
-# ── HTML generation ───────────────────────────────────────────────────────────
-
-def _cost_color(usd: float) -> str:
-    if usd < 1:
-        return "#d1fae5"  # green
-    if usd < 5:
-        return "#fef3c7"  # yellow
-    if usd < 20:
-        return "#fed7aa"  # orange
-    return "#fecaca"      # red
-
+# ── HTML generation ────────────────────────────────────────────────────────────
 
 def generate_html(
     doc_list: list[dict],
     prompt_overhead: int,
     pair_stats: list[dict],
-    extrap_rows: list[dict],
-    avg_input_per_pair: float,
+    avg_doc_tok: int,
+    current_cluster_size: int,
     generated_at: str,
 ) -> str:
     total_input = sum(p["input_tokens"] for p in pair_stats)
@@ -120,15 +112,15 @@ def generate_html(
     doc_rows_html = ""
     for doc in doc_list:
         words = len(doc["full_text"].split())
-        tok_est = int(words * 1.3)
+        cluster = doc.get("cluster", "default")
         doc_rows_html += f"""
         <tr>
           <td><code>{doc['id']}</code></td>
           <td>{doc['title']}</td>
           <td class="num">{doc['authority'].split('(')[1].rstrip(')') if '(' in doc['authority'] else doc['authority']}</td>
+          <td class="num"><span class="cluster-tag">{cluster}</span></td>
           <td class="num">{len(doc['pages'])}</td>
           <td class="num">{words:,}</td>
-          <td class="num">~{tok_est:,}</td>
         </tr>"""
 
     # ── Pair rows ──
@@ -137,7 +129,8 @@ def generate_html(
         content_tokens = p["input_tokens"] - prompt_overhead
         pair_rows_html += f"""
         <tr>
-          <td><code>{p['doc_a']}</code> × <code>{p['doc_b']}</code></td>
+          <td><code>{p['doc_a']}</code> × <code>{p['doc_b']}</code>
+            <span class="cluster-tag" style="margin-left:6px">{p['cluster']}</span></td>
           <td class="num">{prompt_overhead:,}</td>
           <td class="num">{content_tokens:,}</td>
           <td class="num"><strong>{p['input_tokens']:,}</strong></td>
@@ -145,290 +138,161 @@ def generate_html(
           <td class="num cost">${p['cost_usd']:.4f}</td>
         </tr>"""
 
-    # ── Extrapolation rows ──
-    extrap_rows_html = ""
-    is_baseline = True
-    for row in extrap_rows:
-        baseline_marker = " <span class='baseline'>← baseline</span>" if is_baseline else ""
-        is_baseline = False
-        bg_add = _cost_color(row["cost_one_addition"])
-        bg_build = _cost_color(row["cost_full_build"])
-        extrap_rows_html += f"""
-        <tr>
-          <td class="num"><strong>{row['n']}</strong></td>
-          <td class="num">{row['total_pairs']:,}</td>
-          <td class="num">{row['new_pairs_on_add']}{baseline_marker}</td>
-          <td class="num" style="background:{bg_add}">${row['cost_one_addition']:.2f}</td>
-          <td class="num" style="background:{bg_build}">${row['cost_full_build']:.2f}</td>
-        </tr>"""
+    # ── Metric cards ──
+    def metric(label, val, sub=""):
+        return f'<div class="mc"><div class="ml">{label}</div><div class="mv">{val}</div><div class="ms">{sub}</div></div>'
 
-    # ── Robustness stack rows ──
-    robustness_items = [
-        (
-            "Pydantic schema validation",
-            "Every LLM response is validated against a typed schema "
-            "(<code>Conflict</code>, <code>ConflictSource</code>). "
-            "Malformed conflicts are logged and dropped, not silently served. "
-            "Prevents schema drift between prompt iterations from corrupting cached results.",
-        ),
-        (
-            "Quote grounding",
-            "Each cited quote is fuzzy-matched against the source document text "
-            "(65% word-overlap, accent-normalised). Conflicts where the quote cannot "
-            "be located are flagged <code>quote_verified: false</code> in the API "
-            "response and shown with a warning badge in the UI. "
-            "Catches hallucinated citations without discarding potentially valid conflicts.",
-        ),
-        (
-            "Retry with exponential backoff",
-            "API calls are wrapped in a 3-attempt loop "
-            "(1 s → 2 s → 4 s) on <code>RateLimitError</code> and "
-            "<code>InternalServerError</code>. Permanent failures propagate as a 500.",
-        ),
-        (
-            "Prompt versioning",
-            "<code>PROMPT_VERSION</code> is embedded in the pair cache key. "
-            "Bumping the version automatically invalidates all cached pairs on the "
-            "next analysis run — no manual cache flush needed.",
-        ),
-        (
-            "Content-addressed pair cache",
-            "Cache key = <code>sha256(doc_a_text)[:12] + sha256(doc_b_text)[:12] + PROMPT_VERSION</code>. "
-            "Changing a document's bytes invalidates only the pairs involving that document; "
-            "all other pairs remain cached.",
-        ),
-        (
-            "Append-only usage log",
-            "Every API call appends a record to <code>usage_log.jsonl</code> "
-            "(timestamp, pair ID, model, input tokens, output tokens, cost USD). "
-            "Exposed at <code>GET /api/usage</code>.",
-        ),
-    ]
-    robustness_rows_html = ""
-    for name, desc in robustness_items:
-        robustness_rows_html += f"""
-        <tr>
-          <td class="guard-name">{name}</td>
-          <td>{desc}</td>
-        </tr>"""
+    cards_html = f"""
+    <div class="metrics">
+      {metric("Documents", str(len(doc_list)), f"{current_cluster_size}-doc cluster · {len(pair_stats)} pairs")}
+      {metric("Total input tokens", f"{total_input:,}", "exact · count_tokens API")}
+      {metric("Output tokens (est.)", f"{total_output_est:,}", f"{OUTPUT_TOKENS_PER_PAIR_EST:,} / pair · conservative")}
+      {metric("Baseline cost", f"${total_cost:.4f}", "$0.00 on warm restart")}
+    </div>"""
+
+    # ── JS for interactive extrapolation ──
+    js = f"""
+const COST_INPUT  = {COST_INPUT_PER_TOKEN};
+const COST_OUTPUT = {COST_OUTPUT_PER_TOKEN};
+const OUTPUT_EST  = {OUTPUT_TOKENS_PER_PAIR_EST};
+const PROMPT_OVERHEAD = {prompt_overhead};
+
+const FIXED_NS = [3, 5, 10, 20, 50, 100];
+
+function costColor(usd) {{
+  if (usd < 1)  return '#d1fae5';
+  if (usd < 10) return '#fef3c7';
+  if (usd < 50) return '#fed7aa';
+  return '#fecaca';
+}}
+
+function calcRow(n, avgDocTok, clusterSize) {{
+  const cs = Math.max(2, clusterSize);
+  const nClusters = n / cs;
+  const pairsPerCluster = cs * (cs - 1) / 2;
+  const totalPairs = nClusters * pairsPerCluster;   // = n*(cs-1)/2
+  const newPairs   = cs - 1;                         // adding 1 doc to a full cluster
+  const pairTok    = 2 * avgDocTok + PROMPT_OVERHEAD;
+  const cpp        = pairTok * COST_INPUT + OUTPUT_EST * COST_OUTPUT;
+  return {{
+    n:          Math.round(n),
+    nClusters:  Math.round(nClusters * 10) / 10,
+    totalPairs: Math.round(totalPairs),
+    newPairs:   Math.round(newPairs),
+    costAdd:    newPairs * cpp,
+    costBuild:  totalPairs * cpp,
+  }};
+}}
+
+function renderTable() {{
+  const avgDocTok   = parseInt(document.getElementById('avgDocTok').value)   || {avg_doc_tok};
+  const clusterSize = parseInt(document.getElementById('clusterSize').value) || {current_cluster_size};
+  const customN     = parseInt(document.getElementById('customN').value)     || 1000;
+
+  const ns = [...FIXED_NS, customN];
+  let rows = '';
+  ns.forEach((n, i) => {{
+    const r = calcRow(n, avgDocTok, clusterSize);
+    const isCustom = i === ns.length - 1;
+    const isBaseline = n === {len(doc_list)};
+    const baseline = isBaseline ? ' <span class="baseline">← baseline</span>' : '';
+    rows += `<tr${{isCustom ? ' class="custom-row"' : ''}}>
+      <td class="num"><strong>${{r.n}}</strong>${{baseline}}</td>
+      <td class="num">${{r.nClusters}}</td>
+      <td class="num">${{r.totalPairs.toLocaleString()}}</td>
+      <td class="num">${{r.newPairs}}</td>
+      <td class="num" style="background:${{costColor(r.costAdd)}}">${{r.costAdd < 0.01 ? r.costAdd.toFixed(4) : r.costAdd.toFixed(2)}}</td>
+      <td class="num" style="background:${{costColor(r.costBuild)}}">${{r.costBuild < 0.01 ? r.costBuild.toFixed(4) : r.costBuild.toFixed(2)}}</td>
+    </tr>`;
+  }});
+  document.getElementById('extrap-body').innerHTML = rows;
+
+  // Update formula note
+  const cpp = (2 * avgDocTok + PROMPT_OVERHEAD) * COST_INPUT + OUTPUT_EST * COST_OUTPUT;
+  document.getElementById('cpp-note').textContent =
+    `${{(2*avgDocTok + PROMPT_OVERHEAD).toLocaleString()}} tok input × $${{(COST_INPUT*1e6).toFixed(0)}}/MTok + ${{OUTPUT_EST.toLocaleString()}} tok output × $${{(COST_OUTPUT*1e6).toFixed(0)}}/MTok = $${{cpp.toFixed(4)}} / pair`;
+}}
+
+document.addEventListener('DOMContentLoaded', () => {{
+  ['avgDocTok', 'clusterSize', 'customN'].forEach(id =>
+    document.getElementById(id).addEventListener('input', renderTable));
+  renderTable();
+}});
+"""
+
+    css = """
+*,*::before,*::after{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.6;color:#1a1a2e;background:#f5f5f7;margin:0;padding:0 0 48px}
+header{background:#1a1a2e;color:#e2e8f0;padding:28px 40px 24px;border-bottom:3px solid #3b82f6}
+header h1{margin:0 0 6px;font-size:20px;font-weight:600;color:#fff}
+header p{margin:0;font-size:12px;color:#94a3b8}
+header code{background:#334155;padding:1px 5px;border-radius:3px;font-size:11px;color:#93c5fd}
+main{max-width:960px;margin:32px auto;padding:0 24px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:32px}
+.mc{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:16px 18px}
+.ml{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#64748b;margin-bottom:6px}
+.mv{font-size:22px;font-weight:700;color:#1e293b}
+.ms{font-size:11px;color:#94a3b8;margin-top:2px}
+section{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:24px 28px;margin-bottom:20px}
+h2{font-size:15px;font-weight:600;color:#1e293b;margin:0 0 16px;padding-bottom:10px;border-bottom:1px solid #f1f5f9}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#64748b;padding:6px 10px;border-bottom:2px solid #e2e8f0}
+tbody tr:nth-child(odd){background:#f8fafc}
+tbody tr:hover{background:#f0f9ff}
+td{padding:8px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+td.num{text-align:right;white-space:nowrap}
+td.cost{font-weight:600;color:#0f766e}
+tfoot td{font-weight:600;border-top:2px solid #e2e8f0;background:#f8fafc}
+code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:12px;color:#0f172a}
+.est{font-size:10px;color:#94a3b8;font-style:italic}
+.baseline{font-size:10px;color:#3b82f6;font-weight:400}
+.cluster-tag{font-size:10px;background:#ede9fe;color:#5b21b6;padding:1px 6px;border-radius:3px;font-weight:500}
+.note{margin-top:14px;padding:12px 14px;background:#f8fafc;border-left:3px solid #94a3b8;border-radius:0 4px 4px 0;font-size:12px;color:#475569;line-height:1.7}
+.note strong{color:#334155}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;padding:16px 18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px}
+.control-group label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#64748b;margin-bottom:6px}
+.control-group input{width:100%;border:1px solid #cbd5e1;border-radius:5px;padding:7px 10px;font-size:14px;color:#1e293b;background:#fff}
+.control-group input:focus{outline:2px solid #3b82f6;border-color:transparent}
+.control-note{display:block;font-size:11px;color:#94a3b8;margin-top:4px}
+.custom-row{background:#fffbeb !important}
+#cpp-note{font-size:11px;color:#64748b;font-style:italic;margin-top:10px;display:block}
+"""
 
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SECO — API Costing & Robustness Report</title>
-  <style>
-    *, *::before, *::after {{ box-sizing: border-box; }}
-    body {{
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      font-size: 14px;
-      line-height: 1.6;
-      color: #1a1a2e;
-      background: #f5f5f7;
-      margin: 0;
-      padding: 0 0 48px;
-    }}
-    header {{
-      background: #1a1a2e;
-      color: #e2e8f0;
-      padding: 28px 40px 24px;
-      border-bottom: 3px solid #3b82f6;
-    }}
-    header h1 {{
-      margin: 0 0 6px;
-      font-size: 20px;
-      font-weight: 600;
-      color: #fff;
-    }}
-    header p {{
-      margin: 0;
-      font-size: 12px;
-      color: #94a3b8;
-    }}
-    header code {{
-      background: #334155;
-      padding: 1px 5px;
-      border-radius: 3px;
-      font-size: 11px;
-      color: #93c5fd;
-    }}
-    main {{
-      max-width: 960px;
-      margin: 32px auto;
-      padding: 0 24px;
-    }}
-    .metric-row {{
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 32px;
-    }}
-    .metric-card {{
-      background: #fff;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 16px 18px;
-    }}
-    .metric-card .label {{
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      color: #64748b;
-      margin-bottom: 6px;
-    }}
-    .metric-card .value {{
-      font-size: 22px;
-      font-weight: 700;
-      color: #1e293b;
-    }}
-    .metric-card .sub {{
-      font-size: 11px;
-      color: #94a3b8;
-      margin-top: 2px;
-    }}
-    section {{
-      background: #fff;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 24px 28px;
-      margin-bottom: 20px;
-    }}
-    h2 {{
-      font-size: 15px;
-      font-weight: 600;
-      color: #1e293b;
-      margin: 0 0 16px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #f1f5f9;
-    }}
-    table {{
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }}
-    thead th {{
-      text-align: left;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #64748b;
-      padding: 6px 10px;
-      border-bottom: 2px solid #e2e8f0;
-    }}
-    tbody tr:nth-child(odd) {{ background: #f8fafc; }}
-    tbody tr:hover {{ background: #f0f9ff; }}
-    td {{
-      padding: 8px 10px;
-      border-bottom: 1px solid #f1f5f9;
-      vertical-align: top;
-    }}
-    td.num {{ text-align: right; white-space: nowrap; }}
-    td.cost {{
-      font-weight: 600;
-      color: #0f766e;
-    }}
-    td.guard-name {{
-      font-weight: 600;
-      white-space: nowrap;
-      color: #1e293b;
-      width: 200px;
-    }}
-    .est {{
-      font-size: 10px;
-      color: #94a3b8;
-      font-style: italic;
-    }}
-    .baseline {{
-      font-size: 10px;
-      color: #3b82f6;
-      font-weight: 400;
-    }}
-    code {{
-      background: #f1f5f9;
-      padding: 1px 5px;
-      border-radius: 3px;
-      font-size: 12px;
-      color: #0f172a;
-    }}
-    .note {{
-      margin-top: 14px;
-      padding: 12px 14px;
-      background: #f8fafc;
-      border-left: 3px solid #94a3b8;
-      border-radius: 0 4px 4px 0;
-      font-size: 12px;
-      color: #475569;
-      line-height: 1.7;
-    }}
-    .note strong {{ color: #334155; }}
-    tfoot td {{
-      font-weight: 600;
-      border-top: 2px solid #e2e8f0;
-      background: #f8fafc;
-    }}
-  </style>
+  <title>SECO — API Costing Report</title>
+  <style>{css}</style>
 </head>
 <body>
 <header>
-  <h1>SECO — API Costing &amp; Robustness Report</h1>
+  <h1>SECO — API Costing Report</h1>
   <p>
     Generated: {generated_at} &nbsp;·&nbsp;
     Model: <code>{MODEL}</code> &nbsp;·&nbsp;
-    Pricing: <code>${COST_INPUT_PER_TOKEN * 1_000_000:.0f} / MTok input</code>
-    &nbsp;·&nbsp; <code>${COST_OUTPUT_PER_TOKEN * 1_000_000:.0f} / MTok output</code>
+    Input: <code>${COST_INPUT_PER_TOKEN * 1_000_000:.0f} / MTok</code> &nbsp;·&nbsp;
+    Output: <code>${COST_OUTPUT_PER_TOKEN * 1_000_000:.0f} / MTok</code>
   </p>
 </header>
-
 <main>
+  {cards_html}
 
-  <div class="metric-row">
-    <div class="metric-card">
-      <div class="label">Documents analysed</div>
-      <div class="value">{len(doc_list)}</div>
-      <div class="sub">{len(pair_stats)} pairs</div>
-    </div>
-    <div class="metric-card">
-      <div class="label">Total input tokens</div>
-      <div class="value">{total_input:,}</div>
-      <div class="sub">exact · count_tokens API</div>
-    </div>
-    <div class="metric-card">
-      <div class="label">Output tokens (est.)</div>
-      <div class="value">{total_output_est:,}</div>
-      <div class="sub">{OUTPUT_TOKENS_PER_PAIR_EST:,} / pair · conservative</div>
-    </div>
-    <div class="metric-card">
-      <div class="label">Total cost (3-doc baseline)</div>
-      <div class="value">${total_cost:.4f}</div>
-      <div class="sub">$0.00 on warm restart</div>
-    </div>
-  </div>
-
-  <!-- 1. Document corpus -->
   <section>
     <h2>1 · Document Corpus</h2>
     <table>
       <thead>
-        <tr>
-          <th>ID</th>
-          <th>Title</th>
-          <th>Authority</th>
-          <th>Pages</th>
-          <th>Words</th>
-          <th>Tokens (est.)</th>
-        </tr>
+        <tr><th>ID</th><th>Title</th><th>Authority</th><th>Cluster</th><th>Pages</th><th>Words</th></tr>
       </thead>
       <tbody>{doc_rows_html}</tbody>
     </table>
     <div class="note">
-      Per-document token count is estimated as <strong>words × 1.3</strong> (standard approximation for French regulatory text).
-      Pair-level counts below are exact, measured via the Anthropic <code>count_tokens</code> API (non-billable endpoint).
+      Cluster = subfolder under <code>documents/</code>. Only intra-cluster pairs are analyzed.
+      Per-document token counts are estimated at words × 1.3; pair-level counts below are exact (count_tokens API).
     </div>
   </section>
 
-  <!-- 2. Pair analysis -->
   <section>
     <h2>2 · Pair-by-Pair Token Analysis</h2>
     <table>
@@ -455,79 +319,76 @@ def generate_html(
       </tfoot>
     </table>
     <div class="note">
-      <strong>Prompt overhead</strong> = system prompt + pair prompt template, before any document content is added ({prompt_overhead:,} tokens, constant per call).<br>
-      <strong>Output estimate</strong> uses {OUTPUT_TOKENS_PER_PAIR_EST:,} tokens/pair (upper bound from <code>max_tokens</code> setting; observed output is typically 2,000–3,500 tokens).
+      <strong>Prompt overhead</strong> = system prompt + pair prompt template ({prompt_overhead:,} tokens, constant per call).<br>
+      <strong>Output estimate</strong>: {OUTPUT_TOKENS_PER_PAIR_EST:,} tokens/pair (upper bound; observed 2,000–3,500).
     </div>
   </section>
 
-  <!-- 3. Robustness stack -->
   <section>
-    <h2>3 · Robustness Stack</h2>
+    <h2>3 · Cost Extrapolation</h2>
+    <div class="controls">
+      <div class="control-group">
+        <label>Avg. document size (tokens)</label>
+        <input id="avgDocTok" type="number" value="{avg_doc_tok}" min="500" step="500">
+        <span class="control-note">Default: derived from count_tokens measurements ({avg_doc_tok:,} tok/doc)</span>
+      </div>
+      <div class="control-group">
+        <label>Avg. cluster size (docs per topic)</label>
+        <input id="clusterSize" type="number" value="{current_cluster_size}" min="2" step="1">
+        <span class="control-note">Default: current lighting cluster ({current_cluster_size} docs)</span>
+      </div>
+    </div>
     <table>
       <thead>
         <tr>
-          <th style="width:200px">Guard</th>
-          <th>What it does</th>
-        </tr>
-      </thead>
-      <tbody>{robustness_rows_html}</tbody>
-    </table>
-  </section>
-
-  <!-- 4. Extrapolation -->
-  <section>
-    <h2>4 · Cost Extrapolation</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Index size (N docs)</th>
-          <th>Total pairs N(N−1)/2</th>
+          <th>Total docs (N)</th>
+          <th>Clusters (N/C)</th>
+          <th>Total pairs N·(C−1)/2</th>
           <th>New pairs when adding 1 doc</th>
-          <th>Cost: 1 doc addition</th>
-          <th>Cost: full build from scratch</th>
+          <th>Cost: 1 addition</th>
+          <th>Cost: full build</th>
         </tr>
       </thead>
-      <tbody>{extrap_rows_html}</tbody>
+      <tbody id="extrap-body"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4" style="text-align:right;font-weight:400;font-size:12px">Custom N →</td>
+          <td colspan="2" style="padding:4px 10px">
+            <input id="customN" type="number" value="1000" min="10" step="10"
+              style="width:100%;border:1px solid #cbd5e1;border-radius:4px;padding:4px 8px;font-size:13px">
+          </td>
+        </tr>
+      </tfoot>
     </table>
+    <span id="cpp-note"></span>
     <div class="note">
-      <strong>Model assumptions:</strong>
-      average input tokens per pair = <strong>{int(avg_input_per_pair):,}</strong>
-      (mean of the {len(pair_stats)} measured pairs above) ·
-      output = {OUTPUT_TOKENS_PER_PAIR_EST:,} tokens/pair (conservative) ·
-      warm restarts cost $0.00 (all pairs served from cache).<br><br>
-
-      <strong>Adding the N-th document</strong> to an index of N−1 existing documents
-      requires N−1 new LLM calls — one per new pair. All existing pair results are cache hits.
-      Growth is O(n) per ingestion, O(n²) total to build from scratch.<br><br>
-
-      <strong>Main lever for cost reduction:</strong> document chunking — send only topically
-      relevant sections per pair instead of full text. Lighting regulations are ~30% lighting-specific content;
-      chunking could reduce per-pair token counts by 3–5×, bringing the 50-doc full-build cost
-      from ~${extrap_rows[-2]['cost_full_build']:.0f} to under $20.
+      <strong>Cluster model:</strong> documents in the same topic folder are compared pairwise;
+      cross-cluster pairs are never run. Adding 1 document to an existing cluster of size C
+      triggers exactly C−1 new LLM calls — independent of the total corpus size N.
+      This bounds ingestion cost at O(C), not O(N).<br><br>
+      <strong>Full build</strong> = cost to analyze a fresh corpus from scratch.
+      <strong>1 addition</strong> = marginal cost of adding one document to an existing cluster (all other pairs cached).
     </div>
   </section>
 
 </main>
+<script>{js}</script>
 </body>
 </html>"""
 
 
-# ── Entry point ───────────────────────────────────────────────────────────────
+# ── Entry point ────────────────────────────────────────────────────────────────
 
 def main():
     parser = argparse.ArgumentParser(description="Generate API costing report")
-    parser.add_argument(
-        "--output",
-        default=str(ROOT / "documentation" / "costing.html"),
-        help="Output HTML path",
-    )
+    parser.add_argument("--output", default=str(ROOT / "documentation" / "costing.html"))
     args = parser.parse_args()
 
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     docs = get_extracted()
     doc_list = list(docs.values())
 
-    print(f"Counting prompt overhead...")
+    print("Counting prompt overhead...")
     prompt_overhead = count_prompt_overhead(client)
     print(f"  {prompt_overhead:,} tokens")
 
@@ -536,6 +397,9 @@ def main():
     for i in range(len(doc_list)):
         for j in range(i + 1, len(doc_list)):
             da, db = doc_list[i], doc_list[j]
+            # Only measure intra-cluster pairs (mirrors analyze.py behaviour)
+            if da.get("cluster") != db.get("cluster"):
+                continue
             print(f"  {da['id']} × {db['id']}...")
             input_tokens = count_pair_input_tokens(client, da, db)
             cost = (
@@ -545,16 +409,24 @@ def main():
             pair_stats.append({
                 "doc_a": da["id"],
                 "doc_b": db["id"],
+                "cluster": da.get("cluster", "default"),
                 "input_tokens": input_tokens,
                 "cost_usd": cost,
             })
             print(f"    → {input_tokens:,} tokens · ${cost:.4f}")
 
-    avg_input = sum(p["input_tokens"] for p in pair_stats) / len(pair_stats)
-    extrap = extrapolation_rows(avg_input, [3, 5, 10, 20, 50, 100])
+    avg_doc_tok = avg_doc_tokens_from_pairs(pair_stats, prompt_overhead)
+    cluster_sizes = {}
+    for doc in doc_list:
+        c = doc.get("cluster", "default")
+        cluster_sizes[c] = cluster_sizes.get(c, 0) + 1
+    current_cluster_size = round(sum(cluster_sizes.values()) / len(cluster_sizes)) if cluster_sizes else 3
+
+    print(f"\nAvg. doc tokens (derived): {avg_doc_tok:,}")
+    print(f"Avg. cluster size: {current_cluster_size}")
 
     generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    html = generate_html(doc_list, prompt_overhead, pair_stats, extrap, avg_input, generated_at)
+    html = generate_html(doc_list, prompt_overhead, pair_stats, avg_doc_tok, current_cluster_size, generated_at)
 
     out = Path(args.output)
     out.parent.mkdir(exist_ok=True)

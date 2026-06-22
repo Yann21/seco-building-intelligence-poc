@@ -282,50 +282,68 @@ def run_pair(doc_a: dict, doc_b: dict, client: anthropic.Anthropic, force: bool 
 
 # ── Merge & top-level entry point ─────────────────────────────────────────────
 
-def _all_pair_caches_exist(doc_list: list[dict]) -> bool:
-    return all(
-        _pair_cache_path(doc_list[i], doc_list[j]).exists()
-        for i in range(len(doc_list))
-        for j in range(i + 1, len(doc_list))
-    )
+def _cluster_pairs(docs: dict) -> list[tuple[dict, dict]]:
+    """
+    Return all (doc_a, doc_b) pairs where both docs share the same cluster.
+    Cross-cluster pairs are never analyzed — documents in different topic areas
+    (e.g. lighting vs. fire-safety) have no meaningful regulatory overlap.
+    """
+    from collections import defaultdict
+    clusters: dict[str, list[dict]] = defaultdict(list)
+    for doc in docs.values():
+        clusters[doc.get("cluster", "default")].append(doc)
+    pairs = []
+    for cluster_docs in clusters.values():
+        for i in range(len(cluster_docs)):
+            for j in range(i + 1, len(cluster_docs)):
+                pairs.append((cluster_docs[i], cluster_docs[j]))
+    return pairs
+
+
+def _all_pair_caches_exist(docs: dict) -> bool:
+    return all(_pair_cache_path(a, b).exists() for a, b in _cluster_pairs(docs))
 
 
 def get_analysis(force: bool = False) -> dict:
     """
-    Run pairwise analysis over all documents in the registry.
+    Run pairwise analysis within each document cluster.
 
-    With force=False (default): pair caches are reused if doc content unchanged.
-    A fast path serves from analysis.json when all pair caches are warm and
-    the prompt version matches — no API calls on warm restarts.
-    With force=True: all pair caches are busted and Claude is called for every pair.
+    Only documents in the same subfolder (cluster) are compared — a lighting
+    regulation is never paired against a fire-safety document.
 
-    Cache invalidation is content-addressed: changing a PDF's bytes changes its
-    hash, which misses the pair cache and triggers re-analysis only for pairs
-    involving that document.
+    With force=False: pair caches are reused if doc content unchanged.
+    Fast path serves from analysis.json when all cluster-pair caches are warm.
+    With force=True: all pair caches are busted and Claude is called fresh.
     """
     docs = get_extracted()
 
-    # Fast path: serve from analysis.json when everything is already up-to-date
+    # Fast path: serve from analysis.json when everything is up-to-date
     if not force and ANALYSIS_CACHE.exists():
         try:
             cached = json.loads(ANALYSIS_CACHE.read_text())
             if (cached.get("_meta", {}).get("prompt_version") == PROMPT_VERSION
-                    and _all_pair_caches_exist(list(docs.values()))):
+                    and _all_pair_caches_exist(docs)):
                 return cached
         except Exception:
             pass
 
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
-    doc_list = list(docs.values())
+    pairs = _cluster_pairs(docs)
     all_conflicts: list[dict] = []
     total_cost = 0.0
 
-    for i in range(len(doc_list)):
-        for j in range(i + 1, len(doc_list)):
-            pair = run_pair(doc_list[i], doc_list[j], client, force=force)
-            # Prefix conflict IDs with pair identifiers to avoid collisions
-            prefix = f"{doc_list[i]['id'][:8]}-{doc_list[j]['id'][:8]}"
+    # Group clusters for logging
+    from collections import defaultdict
+    by_cluster: dict[str, list] = defaultdict(list)
+    for a, b in pairs:
+        by_cluster[a["cluster"]].append((a, b))
+
+    for cluster_name, cluster_pairs in by_cluster.items():
+        print(f"\nCluster '{cluster_name}' — {len(cluster_pairs)} pair(s)")
+        for doc_a, doc_b in cluster_pairs:
+            pair = run_pair(doc_a, doc_b, client, force=force)
+            prefix = f"{doc_a['id'][:8]}-{doc_b['id'][:8]}"
             for idx, c in enumerate(pair["conflicts"]):
                 c["id"] = f"{prefix}-{c.get('id', str(idx))}"
             all_conflicts.extend(pair["conflicts"])
@@ -348,10 +366,10 @@ def get_analysis(force: bool = False) -> dict:
         "mineur": sum(1 for c in verified if c.severity == "mineur"),
     }
     unverified_count = sum(1 for c in verified if not c.quote_verified)
-    n_pairs = len(doc_list) * (len(doc_list) - 1) // 2
+    n_clusters = len(by_cluster)
 
     summary = (
-        f"Analyse de {len(doc_list)} documents ({n_pairs} paires): "
+        f"Analyse de {len(docs)} documents en {n_clusters} cluster(s) ({len(pairs)} paires intra-cluster): "
         f"{len(verified)} conflits — "
         f"{by_severity['critique']} critiques, {by_severity['majeur']} majeurs, {by_severity['mineur']} mineurs."
     )
@@ -363,7 +381,7 @@ def get_analysis(force: bool = False) -> dict:
         "conflicts": [c.model_dump() for c in verified],
         "documents": {
             d["id"]: {k: v for k, v in d.items() if k not in ("pages", "full_text")}
-            for d in doc_list
+            for d in docs.values()
         },
         "_meta": {
             "prompt_version": PROMPT_VERSION,
@@ -372,7 +390,8 @@ def get_analysis(force: bool = False) -> dict:
             "analyzed_at": datetime.now(timezone.utc).isoformat(),
             "quote_verified": len(verified) - unverified_count,
             "quote_unverified": unverified_count,
-            "pair_count": n_pairs,
+            "pair_count": len(pairs),
+            "cluster_count": n_clusters,
         },
     }
 

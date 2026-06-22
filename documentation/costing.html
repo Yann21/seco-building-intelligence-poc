@@ -3,242 +3,102 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SECO — API Costing & Robustness Report</title>
+  <title>SECO — API Costing Report</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      font-size: 14px;
-      line-height: 1.6;
-      color: #1a1a2e;
-      background: #f5f5f7;
-      margin: 0;
-      padding: 0 0 48px;
-    }
-    header {
-      background: #1a1a2e;
-      color: #e2e8f0;
-      padding: 28px 40px 24px;
-      border-bottom: 3px solid #3b82f6;
-    }
-    header h1 {
-      margin: 0 0 6px;
-      font-size: 20px;
-      font-weight: 600;
-      color: #fff;
-    }
-    header p {
-      margin: 0;
-      font-size: 12px;
-      color: #94a3b8;
-    }
-    header code {
-      background: #334155;
-      padding: 1px 5px;
-      border-radius: 3px;
-      font-size: 11px;
-      color: #93c5fd;
-    }
-    main {
-      max-width: 960px;
-      margin: 32px auto;
-      padding: 0 24px;
-    }
-    .metric-row {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 32px;
-    }
-    .metric-card {
-      background: #fff;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 16px 18px;
-    }
-    .metric-card .label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      color: #64748b;
-      margin-bottom: 6px;
-    }
-    .metric-card .value {
-      font-size: 22px;
-      font-weight: 700;
-      color: #1e293b;
-    }
-    .metric-card .sub {
-      font-size: 11px;
-      color: #94a3b8;
-      margin-top: 2px;
-    }
-    section {
-      background: #fff;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 24px 28px;
-      margin-bottom: 20px;
-    }
-    h2 {
-      font-size: 15px;
-      font-weight: 600;
-      color: #1e293b;
-      margin: 0 0 16px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #f1f5f9;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-    thead th {
-      text-align: left;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #64748b;
-      padding: 6px 10px;
-      border-bottom: 2px solid #e2e8f0;
-    }
-    tbody tr:nth-child(odd) { background: #f8fafc; }
-    tbody tr:hover { background: #f0f9ff; }
-    td {
-      padding: 8px 10px;
-      border-bottom: 1px solid #f1f5f9;
-      vertical-align: top;
-    }
-    td.num { text-align: right; white-space: nowrap; }
-    td.cost {
-      font-weight: 600;
-      color: #0f766e;
-    }
-    td.guard-name {
-      font-weight: 600;
-      white-space: nowrap;
-      color: #1e293b;
-      width: 200px;
-    }
-    .est {
-      font-size: 10px;
-      color: #94a3b8;
-      font-style: italic;
-    }
-    .baseline {
-      font-size: 10px;
-      color: #3b82f6;
-      font-weight: 400;
-    }
-    code {
-      background: #f1f5f9;
-      padding: 1px 5px;
-      border-radius: 3px;
-      font-size: 12px;
-      color: #0f172a;
-    }
-    .note {
-      margin-top: 14px;
-      padding: 12px 14px;
-      background: #f8fafc;
-      border-left: 3px solid #94a3b8;
-      border-radius: 0 4px 4px 0;
-      font-size: 12px;
-      color: #475569;
-      line-height: 1.7;
-    }
-    .note strong { color: #334155; }
-    tfoot td {
-      font-weight: 600;
-      border-top: 2px solid #e2e8f0;
-      background: #f8fafc;
-    }
-  </style>
+*,*::before,*::after{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.6;color:#1a1a2e;background:#f5f5f7;margin:0;padding:0 0 48px}
+header{background:#1a1a2e;color:#e2e8f0;padding:28px 40px 24px;border-bottom:3px solid #3b82f6}
+header h1{margin:0 0 6px;font-size:20px;font-weight:600;color:#fff}
+header p{margin:0;font-size:12px;color:#94a3b8}
+header code{background:#334155;padding:1px 5px;border-radius:3px;font-size:11px;color:#93c5fd}
+main{max-width:960px;margin:32px auto;padding:0 24px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:32px}
+.mc{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:16px 18px}
+.ml{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#64748b;margin-bottom:6px}
+.mv{font-size:22px;font-weight:700;color:#1e293b}
+.ms{font-size:11px;color:#94a3b8;margin-top:2px}
+section{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:24px 28px;margin-bottom:20px}
+h2{font-size:15px;font-weight:600;color:#1e293b;margin:0 0 16px;padding-bottom:10px;border-bottom:1px solid #f1f5f9}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#64748b;padding:6px 10px;border-bottom:2px solid #e2e8f0}
+tbody tr:nth-child(odd){background:#f8fafc}
+tbody tr:hover{background:#f0f9ff}
+td{padding:8px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+td.num{text-align:right;white-space:nowrap}
+td.cost{font-weight:600;color:#0f766e}
+tfoot td{font-weight:600;border-top:2px solid #e2e8f0;background:#f8fafc}
+code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:12px;color:#0f172a}
+.est{font-size:10px;color:#94a3b8;font-style:italic}
+.baseline{font-size:10px;color:#3b82f6;font-weight:400}
+.cluster-tag{font-size:10px;background:#ede9fe;color:#5b21b6;padding:1px 6px;border-radius:3px;font-weight:500}
+.note{margin-top:14px;padding:12px 14px;background:#f8fafc;border-left:3px solid #94a3b8;border-radius:0 4px 4px 0;font-size:12px;color:#475569;line-height:1.7}
+.note strong{color:#334155}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;padding:16px 18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px}
+.control-group label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#64748b;margin-bottom:6px}
+.control-group input{width:100%;border:1px solid #cbd5e1;border-radius:5px;padding:7px 10px;font-size:14px;color:#1e293b;background:#fff}
+.control-group input:focus{outline:2px solid #3b82f6;border-color:transparent}
+.control-note{display:block;font-size:11px;color:#94a3b8;margin-top:4px}
+.custom-row{background:#fffbeb !important}
+#cpp-note{font-size:11px;color:#64748b;font-style:italic;margin-top:10px;display:block}
+</style>
 </head>
 <body>
 <header>
-  <h1>SECO — API Costing &amp; Robustness Report</h1>
+  <h1>SECO — API Costing Report</h1>
   <p>
-    Generated: 2026-06-22 09:17 UTC &nbsp;·&nbsp;
+    Generated: 2026-06-22 09:41 UTC &nbsp;·&nbsp;
     Model: <code>claude-sonnet-4-6</code> &nbsp;·&nbsp;
-    Pricing: <code>$3 / MTok input</code>
-    &nbsp;·&nbsp; <code>$15 / MTok output</code>
+    Input: <code>$3 / MTok</code> &nbsp;·&nbsp;
+    Output: <code>$15 / MTok</code>
   </p>
 </header>
-
 <main>
+  
+    <div class="metrics">
+      <div class="mc"><div class="ml">Documents</div><div class="mv">3</div><div class="ms">3-doc cluster · 3 pairs</div></div>
+      <div class="mc"><div class="ml">Total input tokens</div><div class="mv">97,196</div><div class="ms">exact · count_tokens API</div></div>
+      <div class="mc"><div class="ml">Output tokens (est.)</div><div class="mv">12,000</div><div class="ms">4,000 / pair · conservative</div></div>
+      <div class="mc"><div class="ml">Baseline cost</div><div class="mv">$0.4716</div><div class="ms">$0.00 on warm restart</div></div>
+    </div>
 
-  <div class="metric-row">
-    <div class="metric-card">
-      <div class="label">Documents analysed</div>
-      <div class="value">3</div>
-      <div class="sub">3 pairs</div>
-    </div>
-    <div class="metric-card">
-      <div class="label">Total input tokens</div>
-      <div class="value">97,196</div>
-      <div class="sub">exact · count_tokens API</div>
-    </div>
-    <div class="metric-card">
-      <div class="label">Output tokens (est.)</div>
-      <div class="value">12,000</div>
-      <div class="sub">4,000 / pair · conservative</div>
-    </div>
-    <div class="metric-card">
-      <div class="label">Total cost (3-doc baseline)</div>
-      <div class="value">$0.4716</div>
-      <div class="sub">$0.00 on warm restart</div>
-    </div>
-  </div>
-
-  <!-- 1. Document corpus -->
   <section>
     <h2>1 · Document Corpus</h2>
     <table>
       <thead>
-        <tr>
-          <th>ID</th>
-          <th>Title</th>
-          <th>Authority</th>
-          <th>Pages</th>
-          <th>Words</th>
-          <th>Tokens (est.)</th>
-        </tr>
+        <tr><th>ID</th><th>Title</th><th>Authority</th><th>Cluster</th><th>Pages</th><th>Words</th></tr>
       </thead>
       <tbody>
+        <tr>
+          <td><code>ITM-CL-144.1</code></td>
+          <td>ITM-CL 144.1 – Installations électriques de chantier (Art. 7 Éclairage)</td>
+          <td class="num">ITM</td>
+          <td class="num"><span class="cluster-tag">lighting</span></td>
+          <td class="num">9</td>
+          <td class="num">3,271</td>
+        </tr>
         <tr>
           <td><code>ITM-CL-55.2</code></td>
           <td>ITM-CL 55.2 – Éclairage des lieux de travail</td>
           <td class="num">ITM</td>
+          <td class="num"><span class="cluster-tag">lighting</span></td>
           <td class="num">15</td>
           <td class="num">4,067</td>
-          <td class="num">~5,287</td>
         </tr>
         <tr>
           <td><code>ITM-ET-32.10</code></td>
           <td>ITM-ET 32.10 – Protection des Travailleurs (Art. 15 Éclairage)</td>
           <td class="num">ITM</td>
+          <td class="num"><span class="cluster-tag">lighting</span></td>
           <td class="num">41</td>
           <td class="num">13,682</td>
-          <td class="num">~17,786</td>
-        </tr>
-        <tr>
-          <td><code>ITM-CL-144.1</code></td>
-          <td>ITM-CL 144.1 – Installations électriques de chantier (Art. 7 Éclairage)</td>
-          <td class="num">ITM</td>
-          <td class="num">9</td>
-          <td class="num">3,271</td>
-          <td class="num">~4,252</td>
         </tr></tbody>
     </table>
     <div class="note">
-      Per-document token count is estimated as <strong>words × 1.3</strong> (standard approximation for French regulatory text).
-      Pair-level counts below are exact, measured via the Anthropic <code>count_tokens</code> API (non-billable endpoint).
+      Cluster = subfolder under <code>documents/</code>. Only intra-cluster pairs are analyzed.
+      Per-document token counts are estimated at words × 1.3; pair-level counts below are exact (count_tokens API).
     </div>
   </section>
 
-  <!-- 2. Pair analysis -->
   <section>
     <h2>2 · Pair-by-Pair Token Analysis</h2>
     <table>
@@ -254,15 +114,8 @@
       </thead>
       <tbody>
         <tr>
-          <td><code>ITM-CL-55.2</code> × <code>ITM-ET-32.10</code></td>
-          <td class="num">578</td>
-          <td class="num">40,771</td>
-          <td class="num"><strong>41,349</strong></td>
-          <td class="num">4,000 <span class="est">est.</span></td>
-          <td class="num cost">$0.1840</td>
-        </tr>
-        <tr>
-          <td><code>ITM-CL-55.2</code> × <code>ITM-CL-144.1</code></td>
+          <td><code>ITM-CL-144.1</code> × <code>ITM-CL-55.2</code>
+            <span class="cluster-tag" style="margin-left:6px">lighting</span></td>
           <td class="num">578</td>
           <td class="num">17,325</td>
           <td class="num"><strong>17,903</strong></td>
@@ -270,12 +123,22 @@
           <td class="num cost">$0.1137</td>
         </tr>
         <tr>
-          <td><code>ITM-ET-32.10</code> × <code>ITM-CL-144.1</code></td>
+          <td><code>ITM-CL-144.1</code> × <code>ITM-ET-32.10</code>
+            <span class="cluster-tag" style="margin-left:6px">lighting</span></td>
           <td class="num">578</td>
           <td class="num">37,366</td>
           <td class="num"><strong>37,944</strong></td>
           <td class="num">4,000 <span class="est">est.</span></td>
           <td class="num cost">$0.1738</td>
+        </tr>
+        <tr>
+          <td><code>ITM-CL-55.2</code> × <code>ITM-ET-32.10</code>
+            <span class="cluster-tag" style="margin-left:6px">lighting</span></td>
+          <td class="num">578</td>
+          <td class="num">40,771</td>
+          <td class="num"><strong>41,349</strong></td>
+          <td class="num">4,000 <span class="est">est.</span></td>
+          <td class="num cost">$0.1840</td>
         </tr></tbody>
       <tfoot>
         <tr>
@@ -289,124 +152,126 @@
       </tfoot>
     </table>
     <div class="note">
-      <strong>Prompt overhead</strong> = system prompt + pair prompt template, before any document content is added (578 tokens, constant per call).<br>
-      <strong>Output estimate</strong> uses 4,000 tokens/pair (upper bound from <code>max_tokens</code> setting; observed output is typically 2,000–3,500 tokens).
+      <strong>Prompt overhead</strong> = system prompt + pair prompt template (578 tokens, constant per call).<br>
+      <strong>Output estimate</strong>: 4,000 tokens/pair (upper bound; observed 2,000–3,500).
     </div>
   </section>
 
-  <!-- 3. Robustness stack -->
   <section>
-    <h2>3 · Robustness Stack</h2>
+    <h2>3 · Cost Extrapolation</h2>
+    <div class="controls">
+      <div class="control-group">
+        <label>Avg. document size (tokens)</label>
+        <input id="avgDocTok" type="number" value="15910" min="500" step="500">
+        <span class="control-note">Default: derived from count_tokens measurements (15,910 tok/doc)</span>
+      </div>
+      <div class="control-group">
+        <label>Avg. cluster size (docs per topic)</label>
+        <input id="clusterSize" type="number" value="3" min="2" step="1">
+        <span class="control-note">Default: current lighting cluster (3 docs)</span>
+      </div>
+    </div>
     <table>
       <thead>
         <tr>
-          <th style="width:200px">Guard</th>
-          <th>What it does</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td class="guard-name">Pydantic schema validation</td>
-          <td>Every LLM response is validated against a typed schema (<code>Conflict</code>, <code>ConflictSource</code>). Malformed conflicts are logged and dropped, not silently served. Prevents schema drift between prompt iterations from corrupting cached results.</td>
-        </tr>
-        <tr>
-          <td class="guard-name">Quote grounding</td>
-          <td>Each cited quote is fuzzy-matched against the source document text (65% word-overlap, accent-normalised). Conflicts where the quote cannot be located are flagged <code>quote_verified: false</code> in the API response and shown with a warning badge in the UI. Catches hallucinated citations without discarding potentially valid conflicts.</td>
-        </tr>
-        <tr>
-          <td class="guard-name">Retry with exponential backoff</td>
-          <td>API calls are wrapped in a 3-attempt loop (1 s → 2 s → 4 s) on <code>RateLimitError</code> and <code>InternalServerError</code>. Permanent failures propagate as a 500.</td>
-        </tr>
-        <tr>
-          <td class="guard-name">Prompt versioning</td>
-          <td><code>PROMPT_VERSION</code> is embedded in the pair cache key. Bumping the version automatically invalidates all cached pairs on the next analysis run — no manual cache flush needed.</td>
-        </tr>
-        <tr>
-          <td class="guard-name">Content-addressed pair cache</td>
-          <td>Cache key = <code>sha256(doc_a_text)[:12] + sha256(doc_b_text)[:12] + PROMPT_VERSION</code>. Changing a document's bytes invalidates only the pairs involving that document; all other pairs remain cached.</td>
-        </tr>
-        <tr>
-          <td class="guard-name">Append-only usage log</td>
-          <td>Every API call appends a record to <code>usage_log.jsonl</code> (timestamp, pair ID, model, input tokens, output tokens, cost USD). Exposed at <code>GET /api/usage</code>.</td>
-        </tr></tbody>
-    </table>
-  </section>
-
-  <!-- 4. Extrapolation -->
-  <section>
-    <h2>4 · Cost Extrapolation</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Index size (N docs)</th>
-          <th>Total pairs N(N−1)/2</th>
+          <th>Total docs (N)</th>
+          <th>Clusters (N/C)</th>
+          <th>Total pairs N·(C−1)/2</th>
           <th>New pairs when adding 1 doc</th>
-          <th>Cost: 1 doc addition</th>
-          <th>Cost: full build from scratch</th>
+          <th>Cost: 1 addition</th>
+          <th>Cost: full build</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody id="extrap-body"></tbody>
+      <tfoot>
         <tr>
-          <td class="num"><strong>3</strong></td>
-          <td class="num">3</td>
-          <td class="num">2 <span class='baseline'>← baseline</span></td>
-          <td class="num" style="background:#d1fae5">$0.31</td>
-          <td class="num" style="background:#d1fae5">$0.47</td>
+          <td colspan="4" style="text-align:right;font-weight:400;font-size:12px">Custom N →</td>
+          <td colspan="2" style="padding:4px 10px">
+            <input id="customN" type="number" value="1000" min="10" step="10"
+              style="width:100%;border:1px solid #cbd5e1;border-radius:4px;padding:4px 8px;font-size:13px">
+          </td>
         </tr>
-        <tr>
-          <td class="num"><strong>5</strong></td>
-          <td class="num">10</td>
-          <td class="num">4</td>
-          <td class="num" style="background:#d1fae5">$0.63</td>
-          <td class="num" style="background:#fef3c7">$1.57</td>
-        </tr>
-        <tr>
-          <td class="num"><strong>10</strong></td>
-          <td class="num">45</td>
-          <td class="num">9</td>
-          <td class="num" style="background:#fef3c7">$1.41</td>
-          <td class="num" style="background:#fed7aa">$7.07</td>
-        </tr>
-        <tr>
-          <td class="num"><strong>20</strong></td>
-          <td class="num">190</td>
-          <td class="num">19</td>
-          <td class="num" style="background:#fef3c7">$2.99</td>
-          <td class="num" style="background:#fecaca">$29.87</td>
-        </tr>
-        <tr>
-          <td class="num"><strong>50</strong></td>
-          <td class="num">1,225</td>
-          <td class="num">49</td>
-          <td class="num" style="background:#fed7aa">$7.70</td>
-          <td class="num" style="background:#fecaca">$192.57</td>
-        </tr>
-        <tr>
-          <td class="num"><strong>100</strong></td>
-          <td class="num">4,950</td>
-          <td class="num">99</td>
-          <td class="num" style="background:#fed7aa">$15.56</td>
-          <td class="num" style="background:#fecaca">$778.12</td>
-        </tr></tbody>
+      </tfoot>
     </table>
+    <span id="cpp-note"></span>
     <div class="note">
-      <strong>Model assumptions:</strong>
-      average input tokens per pair = <strong>32,398</strong>
-      (mean of the 3 measured pairs above) ·
-      output = 4,000 tokens/pair (conservative) ·
-      warm restarts cost $0.00 (all pairs served from cache).<br><br>
-
-      <strong>Adding the N-th document</strong> to an index of N−1 existing documents
-      requires N−1 new LLM calls — one per new pair. All existing pair results are cache hits.
-      Growth is O(n) per ingestion, O(n²) total to build from scratch.<br><br>
-
-      <strong>Main lever for cost reduction:</strong> document chunking — send only topically
-      relevant sections per pair instead of full text. Lighting regulations are ~30% lighting-specific content;
-      chunking could reduce per-pair token counts by 3–5×, bringing the 50-doc full-build cost
-      from ~$193 to under $20.
+      <strong>Cluster model:</strong> documents in the same topic folder are compared pairwise;
+      cross-cluster pairs are never run. Adding 1 document to an existing cluster of size C
+      triggers exactly C−1 new LLM calls — independent of the total corpus size N.
+      This bounds ingestion cost at O(C), not O(N).<br><br>
+      <strong>Full build</strong> = cost to analyze a fresh corpus from scratch.
+      <strong>1 addition</strong> = marginal cost of adding one document to an existing cluster (all other pairs cached).
     </div>
   </section>
 
 </main>
+<script>
+const COST_INPUT  = 3e-06;
+const COST_OUTPUT = 1.5e-05;
+const OUTPUT_EST  = 4000;
+const PROMPT_OVERHEAD = 578;
+
+const FIXED_NS = [3, 5, 10, 20, 50, 100];
+
+function costColor(usd) {
+  if (usd < 1)  return '#d1fae5';
+  if (usd < 10) return '#fef3c7';
+  if (usd < 50) return '#fed7aa';
+  return '#fecaca';
+}
+
+function calcRow(n, avgDocTok, clusterSize) {
+  const cs = Math.max(2, clusterSize);
+  const nClusters = n / cs;
+  const pairsPerCluster = cs * (cs - 1) / 2;
+  const totalPairs = nClusters * pairsPerCluster;   // = n*(cs-1)/2
+  const newPairs   = cs - 1;                         // adding 1 doc to a full cluster
+  const pairTok    = 2 * avgDocTok + PROMPT_OVERHEAD;
+  const cpp        = pairTok * COST_INPUT + OUTPUT_EST * COST_OUTPUT;
+  return {
+    n:          Math.round(n),
+    nClusters:  Math.round(nClusters * 10) / 10,
+    totalPairs: Math.round(totalPairs),
+    newPairs:   Math.round(newPairs),
+    costAdd:    newPairs * cpp,
+    costBuild:  totalPairs * cpp,
+  };
+}
+
+function renderTable() {
+  const avgDocTok   = parseInt(document.getElementById('avgDocTok').value)   || 15910;
+  const clusterSize = parseInt(document.getElementById('clusterSize').value) || 3;
+  const customN     = parseInt(document.getElementById('customN').value)     || 1000;
+
+  const ns = [...FIXED_NS, customN];
+  let rows = '';
+  ns.forEach((n, i) => {
+    const r = calcRow(n, avgDocTok, clusterSize);
+    const isCustom = i === ns.length - 1;
+    const isBaseline = n === 3;
+    const baseline = isBaseline ? ' <span class="baseline">← baseline</span>' : '';
+    rows += `<tr${isCustom ? ' class="custom-row"' : ''}>
+      <td class="num"><strong>${r.n}</strong>${baseline}</td>
+      <td class="num">${r.nClusters}</td>
+      <td class="num">${r.totalPairs.toLocaleString()}</td>
+      <td class="num">${r.newPairs}</td>
+      <td class="num" style="background:${costColor(r.costAdd)}">${r.costAdd < 0.01 ? r.costAdd.toFixed(4) : r.costAdd.toFixed(2)}</td>
+      <td class="num" style="background:${costColor(r.costBuild)}">${r.costBuild < 0.01 ? r.costBuild.toFixed(4) : r.costBuild.toFixed(2)}</td>
+    </tr>`;
+  });
+  document.getElementById('extrap-body').innerHTML = rows;
+
+  // Update formula note
+  const cpp = (2 * avgDocTok + PROMPT_OVERHEAD) * COST_INPUT + OUTPUT_EST * COST_OUTPUT;
+  document.getElementById('cpp-note').textContent =
+    `${(2*avgDocTok + PROMPT_OVERHEAD).toLocaleString()} tok input × $${(COST_INPUT*1e6).toFixed(0)}/MTok + ${OUTPUT_EST.toLocaleString()} tok output × $${(COST_OUTPUT*1e6).toFixed(0)}/MTok = $${cpp.toFixed(4)} / pair`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  ['avgDocTok', 'clusterSize', 'customN'].forEach(id =>
+    document.getElementById(id).addEventListener('input', renderTable));
+  renderTable();
+});
+</script>
 </body>
 </html>
