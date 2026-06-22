@@ -146,7 +146,7 @@ def gpu_section(pair_stats: list[dict], total_api_cost: float) -> str:
 
     return f"""
   <section class="gpu-section">
-    <h2>4 · GPU Inference — g4dn.xlarge / NVIDIA T4</h2>
+    <h2>3 · GPU Inference — g4dn.xlarge / NVIDIA T4</h2>
     <p style="font-size:12px;color:#4b5563;margin:0 0 14px">
       <span class="tier-api">Tier 1</span> Claude API — pay per token, data leaves network &nbsp;·&nbsp;
       <span class="tier-gpu">Tier 3</span> GPU private — near-API quality, data stays in VPC
@@ -229,6 +229,12 @@ const COST_OUTPUT = {COST_OUTPUT_PER_TOKEN};
 const OUTPUT_EST  = {OUTPUT_TOKENS_PER_PAIR_EST};
 const PROMPT_OVERHEAD = {prompt_overhead};
 
+// GPU — g4dn.xlarge / T4 (eu-central-1)
+const GPU_OD_PER_HR   = 0.526;   // on-demand $/hr
+const GPU_SPOT_PER_HR = 0.158;   // spot $/hr
+const GPU_GEN_TPS     = 180;     // tok/sec generation (Mistral 7B Q4_K_M)
+const GPU_PREFILL_TPS = 4000;    // tok/sec prefill
+
 const FIXED_NS = [3, 5, 10, 20, 50, 100];
 
 function costColor(usd) {{
@@ -236,6 +242,17 @@ function costColor(usd) {{
   if (usd < 10) return '#fef3c7';
   if (usd < 50) return '#fed7aa';
   return '#fecaca';
+}}
+
+function gpuColor(usd) {{
+  if (usd < 0.01) return '#ede9fe';
+  if (usd < 0.1)  return '#ddd6fe';
+  if (usd < 1)    return '#c4b5fd';
+  return '#a78bfa';
+}}
+
+function fmt(usd) {{
+  return usd < 0.01 ? usd.toFixed(4) : usd.toFixed(2);
 }}
 
 function calcRow(n, avgDocTok, clusterSize) {{
@@ -246,13 +263,26 @@ function calcRow(n, avgDocTok, clusterSize) {{
   const newPairs   = cs - 1;                         // adding 1 doc to a full cluster
   const pairTok    = 2 * avgDocTok + PROMPT_OVERHEAD;
   const cpp        = pairTok * COST_INPUT + OUTPUT_EST * COST_OUTPUT;
+
+  // GPU: time per pair = prefill time + generation time
+  const pairTimeS  = pairTok / GPU_PREFILL_TPS + OUTPUT_EST / GPU_GEN_TPS;
+  const gpuCppOD   = pairTimeS / 3600 * GPU_OD_PER_HR;
+  const gpuCppSpot = pairTimeS / 3600 * GPU_SPOT_PER_HR;
+
+  const apiAdd   = newPairs  * cpp;
+  const apiBuild = totalPairs * cpp;
+
   return {{
-    n:          Math.round(n),
-    nClusters:  Math.round(nClusters * 10) / 10,
-    totalPairs: Math.round(totalPairs),
-    newPairs:   Math.round(newPairs),
-    costAdd:    newPairs * cpp,
-    costBuild:  totalPairs * cpp,
+    n:           Math.round(n),
+    nClusters:   Math.round(nClusters * 10) / 10,
+    totalPairs:  Math.round(totalPairs),
+    newPairs:    Math.round(newPairs),
+    costAdd:     apiAdd,
+    costBuild:   apiBuild,
+    gpuAddOD:    newPairs  * gpuCppOD,
+    gpuBuildOD:  totalPairs * gpuCppOD,
+    gpuAddSpot:  newPairs  * gpuCppSpot,
+    gpuBuildSpot: totalPairs * gpuCppSpot,
   }};
 }}
 
@@ -260,6 +290,7 @@ function renderTable() {{
   const avgDocTok   = parseInt(document.getElementById('avgDocTok').value)   || {avg_doc_tok};
   const clusterSize = parseInt(document.getElementById('clusterSize').value) || {current_cluster_size};
   const customN     = parseInt(document.getElementById('customN').value)     || 1000;
+  const gpuMode     = document.getElementById('gpuMode').value;
 
   const ns = [...FIXED_NS, customN];
   let rows = '';
@@ -268,25 +299,37 @@ function renderTable() {{
     const isCustom = i === ns.length - 1;
     const isBaseline = n === {len(doc_list)};
     const baseline = isBaseline ? ' <span class="baseline">← baseline</span>' : '';
+    const gpuAdd   = gpuMode === 'spot' ? r.gpuAddSpot   : r.gpuAddOD;
+    const gpuBuild = gpuMode === 'spot' ? r.gpuBuildSpot : r.gpuBuildOD;
+    const savingsUsd = r.costBuild - gpuBuild;
+    const savingsLabel = fmt(savingsUsd);
     rows += `<tr${{isCustom ? ' class="custom-row"' : ''}}>
       <td class="num"><strong>${{r.n}}</strong>${{baseline}}</td>
       <td class="num">${{r.nClusters}}</td>
       <td class="num">${{r.totalPairs.toLocaleString()}}</td>
       <td class="num">${{r.newPairs}}</td>
-      <td class="num" style="background:${{costColor(r.costAdd)}}">${{r.costAdd < 0.01 ? r.costAdd.toFixed(4) : r.costAdd.toFixed(2)}}</td>
-      <td class="num" style="background:${{costColor(r.costBuild)}}">${{r.costBuild < 0.01 ? r.costBuild.toFixed(4) : r.costBuild.toFixed(2)}}</td>
+      <td class="num" style="background:${{costColor(r.costAdd)}}">${{fmt(r.costAdd)}}</td>
+      <td class="num" style="background:${{costColor(r.costBuild)}}">${{fmt(r.costBuild)}}</td>
+      <td class="num gpu-col" style="background:${{gpuColor(gpuAdd)}}">${{fmt(gpuAdd)}}</td>
+      <td class="num gpu-col" style="background:${{gpuColor(gpuBuild)}}">${{fmt(gpuBuild)}}</td>
+      <td class="num savings-col">${{savingsLabel}}</td>
     </tr>`;
   }});
   document.getElementById('extrap-body').innerHTML = rows;
 
   // Update formula note
-  const cpp = (2 * avgDocTok + PROMPT_OVERHEAD) * COST_INPUT + OUTPUT_EST * COST_OUTPUT;
-  document.getElementById('cpp-note').textContent =
-    `${{(2*avgDocTok + PROMPT_OVERHEAD).toLocaleString()}} tok input × $${{(COST_INPUT*1e6).toFixed(0)}}/MTok + ${{OUTPUT_EST.toLocaleString()}} tok output × $${{(COST_OUTPUT*1e6).toFixed(0)}}/MTok = $${{cpp.toFixed(4)}} / pair`;
+  const cpp    = (2 * avgDocTok + PROMPT_OVERHEAD) * COST_INPUT + OUTPUT_EST * COST_OUTPUT;
+  const pTime  = ((2 * avgDocTok + PROMPT_OVERHEAD) / GPU_PREFILL_TPS + OUTPUT_EST / GPU_GEN_TPS).toFixed(1);
+  const gpuCpp = gpuMode === 'spot'
+    ? (parseFloat(pTime) / 3600 * GPU_SPOT_PER_HR)
+    : (parseFloat(pTime) / 3600 * GPU_OD_PER_HR);
+  document.getElementById('cpp-note').innerHTML =
+    `<strong>API:</strong> ${{(2*avgDocTok + PROMPT_OVERHEAD).toLocaleString()}} tok × $${{(COST_INPUT*1e6).toFixed(0)}}/MTok + ${{OUTPUT_EST.toLocaleString()}} tok × $${{(COST_OUTPUT*1e6).toFixed(0)}}/MTok = $${{cpp.toFixed(4)}} / pair` +
+    `&emsp;|&emsp;<strong>GPU (${{gpuMode}}):</strong> ${{pTime}}s / pair = $${{gpuCpp.toFixed(5)}} / pair`;
 }}
 
 document.addEventListener('DOMContentLoaded', () => {{
-  ['avgDocTok', 'clusterSize', 'customN'].forEach(id =>
+  ['avgDocTok', 'clusterSize', 'customN', 'gpuMode'].forEach(id =>
     document.getElementById(id).addEventListener('input', renderTable));
   renderTable();
 }});
@@ -335,6 +378,14 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:12px;color:#
 .tier-pill{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-right:4px}
 .tier-api{background:#dbeafe;color:#1e40af}
 .tier-gpu{background:#ede9fe;color:#5b21b6}
+.api-header{background:#eff6ff;color:#1e40af}
+.gpu-header{background:#ede9fe;color:#5b21b6}
+.gpu-col{border-left:2px solid #ede9fe}
+.savings-header{background:#f0fdf4;color:#166534;text-align:center !important;border-left:2px solid #bbf7d0}
+.savings-col{border-left:2px solid #bbf7d0;font-weight:600;color:#15803d;white-space:nowrap}
+.savings-mult{font-size:10px;font-weight:700;color:#166534;opacity:.8}
+thead tr:first-child th{border-bottom:1px solid #e2e8f0}
+thead tr:last-child th{font-size:10px;padding:4px 10px;border-bottom:2px solid #e2e8f0}
 """
 
     return f"""<!DOCTYPE html>
@@ -403,9 +454,11 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:12px;color:#
     </div>
   </section>
 
+  {gpu_html}
+
   <section>
-    <h2>3 · Cost Extrapolation</h2>
-    <div class="controls">
+    <h2>4 · Cost Extrapolation</h2>
+    <div class="controls" style="grid-template-columns:1fr 1fr 1fr">
       <div class="control-group">
         <label>Avg. document size (tokens)</label>
         <input id="avgDocTok" type="number" value="{avg_doc_tok}" min="500" step="500">
@@ -416,23 +469,38 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:12px;color:#
         <input id="clusterSize" type="number" value="{current_cluster_size}" min="2" step="1">
         <span class="control-note">Default: current lighting cluster ({current_cluster_size} docs)</span>
       </div>
+      <div class="control-group">
+        <label>GPU pricing tier</label>
+        <select id="gpuMode" style="width:100%;border:1px solid #cbd5e1;border-radius:5px;padding:7px 10px;font-size:14px;color:#1e293b;background:#fff">
+          <option value="on-demand">On-demand ($0.526/hr)</option>
+          <option value="spot">Spot (~$0.158/hr)</option>
+        </select>
+        <span class="control-note">g4dn.xlarge, eu-central-1 · Mistral 7B Q4_K_M</span>
+      </div>
     </div>
     <table>
       <thead>
         <tr>
-          <th>Total docs (N)</th>
-          <th>Clusters (N/C)</th>
-          <th>Total pairs N·(C−1)/2</th>
-          <th>New pairs when adding 1 doc</th>
-          <th>Cost: 1 addition</th>
-          <th>Cost: full build</th>
+          <th rowspan="2">Total docs (N)</th>
+          <th rowspan="2">Clusters</th>
+          <th rowspan="2">Total pairs</th>
+          <th rowspan="2">New pairs +1 doc</th>
+          <th colspan="2" class="api-header" style="text-align:center">Claude API</th>
+          <th colspan="2" class="gpu-header" style="text-align:center">GPU (g4dn.xlarge)</th>
+          <th rowspan="2" class="savings-header">Savings<br><span style="font-weight:400;font-size:9px">full build · API−GPU</span></th>
+        </tr>
+        <tr>
+          <th class="api-header">+1 doc</th>
+          <th class="api-header">Full build</th>
+          <th class="gpu-header">+1 doc</th>
+          <th class="gpu-header">Full build</th>
         </tr>
       </thead>
       <tbody id="extrap-body"></tbody>
       <tfoot>
         <tr>
           <td colspan="4" style="text-align:right;font-weight:400;font-size:12px">Custom N →</td>
-          <td colspan="2" style="padding:4px 10px">
+          <td colspan="5" style="padding:4px 10px">
             <input id="customN" type="number" value="1000" min="10" step="10"
               style="width:100%;border:1px solid #cbd5e1;border-radius:4px;padding:4px 8px;font-size:13px">
           </td>
@@ -447,10 +515,16 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:12px;color:#
       This bounds ingestion cost at O(C), not O(N).<br><br>
       <strong>Full build</strong> = cost to analyze a fresh corpus from scratch.
       <strong>1 addition</strong> = marginal cost of adding one document to an existing cluster (all other pairs cached).
+      GPU costs exclude instance startup (~2 min); break-even favors GPU at ~10+ analyses/day.<br><br>
+      <strong>Note — production costs only.</strong>
+      The figures above reflect steady-state operation on a stable prompt and schema.
+      Development and experimentation add an unknown multiple on top: prompt iterations, schema changes that bust the cache,
+      exploratory runs on new document sets, and benchmark comparisons all generate calls that never reach production.
+      In practice the stack will be a mix across tiers — higher budget means less discipline around token usage and faster iteration;
+      lower budget means trading iteration speed for cost, running more locally and being deliberate about when to call the API.
+      Either way, the production marginal cost is low enough that budget pressure mostly lands on the development phase, not the deployment.
     </div>
   </section>
-
-  {gpu_html}
 
 </main>
 <script>{js}</script>

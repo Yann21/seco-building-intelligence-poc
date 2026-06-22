@@ -145,7 +145,7 @@ def check_ollama(model: str) -> tuple[bool, str]:
         return False, str(e)
 
 
-def run_ollama_pair(doc_a: dict, doc_b: dict, model: str) -> dict:
+def run_ollama_pair(doc_a: dict, doc_b: dict, model: str, max_tokens: int = 4000) -> dict:
     pair_id = f"{doc_a['id']} × {doc_b['id']}"
     cache_path = _local_cache_path(model, doc_a, doc_b)
 
@@ -168,7 +168,7 @@ def run_ollama_pair(doc_a: dict, doc_b: dict, model: str) -> dict:
         "prompt": prompt,
         "stream": False,
         "format": "json",
-        "options": {"temperature": 0.1, "num_predict": 4000},
+        "options": {"temperature": 0.1, "num_predict": max_tokens},
     }).encode()
 
     t0 = time.time()
@@ -539,6 +539,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run LLM benchmark and generate quality audit HTML")
     parser.add_argument("--model", default="phi3.5", help="Ollama model name (default: phi3.5)")
     parser.add_argument("--skip-local", action="store_true", help="Skip local model, regenerate HTML from Claude cache only")
+    parser.add_argument("--max-tokens", type=int, default=4000, help="Max output tokens for local model (default: 4000; use 800-1000 for fast benchmarks)")
     parser.add_argument("--output", default=str(ROOT / "documentation" / "llm_benchmark.html"))
     args = parser.parse_args()
 
@@ -572,7 +573,7 @@ def main():
             local_result = None
             if local_available:
                 try:
-                    local_result = run_ollama_pair(da, db, args.model)
+                    local_result = run_ollama_pair(da, db, args.model, args.max_tokens)
                 except RuntimeError as e:
                     print(f"  [local]  failed: {e}")
 

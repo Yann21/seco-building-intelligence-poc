@@ -60,9 +60,9 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
 <header>
   <h1>SECO — LLM Benchmark &amp; Quality Audit</h1>
   <p>
-    Generated: 2026-06-22 09:25 UTC &nbsp;·&nbsp;
+    Generated: 2026-06-22 10:27 UTC &nbsp;·&nbsp;
     Tier 1: <code>claude-sonnet-4-6</code> &nbsp;·&nbsp;
-    Tier 2: <code>phi3.5 (not run)</code> &nbsp;·&nbsp;
+    Tier 2: <code>phi3.5</code> &nbsp;·&nbsp;
     Tier 3: <code>g4dn.xlarge / T4</code> (projections only)
   </p>
 </header>
@@ -73,19 +73,19 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
 <main>
   
     <div class="metrics">
-      <div class="mc"><div class="ml">Tier 1 · Claude API</div><div class="mv">17 conflicts</div><div class="ms">$0.472 · 179s</div></div>
-      <div class="mc"><div class="ml">Tier 2 · phi3.5 (not run)</div><div class="mv">—</div><div class="ms">not run</div></div>
+      <div class="mc"><div class="ml">Tier 1 · Claude API</div><div class="mv">14 conflicts</div><div class="ms">$0.472 · 186s</div></div>
+      <div class="mc"><div class="ml">Tier 2 · phi3.5</div><div class="mv">2 conflicts</div><div class="ms">$0.00 · 1902s · 2 tok/s</div></div>
       <div class="mc"><div class="ml">Tier 3 · T4 GPU (est.)</div><div class="mv">~91s / 3 pairs</div><div class="ms">$0.0132 on-demand · $0.0040 spot</div></div>
       <div class="mc"><div class="ml">Document pairs</div><div class="mv">3</div><div class="ms">3 documents</div></div>
     </div>
   
   <section class="pair-section">
     <div class="pair-header">
-      <h3>Pair 1: <code>ITM-CL-55.2</code> × <code>ITM-ET-32.10</code></h3>
+      <h3>Pair 1: <code>ITM-CL-144.1</code> × <code>ITM-CL-55.2</code></h3>
     </div>
     <div class="compare-header">
-      <div class="compare-col-head">Tier 1 — Claude claude-sonnet-4-6 <span class="meta">5 conflicts · 61.8s · $0.1840</span></div>
-      <div class="compare-col-head">Tier 2 — phi3.5 (not run) <span class="meta">not run</span></div>
+      <div class="compare-col-head">Tier 1 — Claude claude-sonnet-4-6 <span class="meta">5 conflicts · 59.7s · $0.1137</span></div>
+      <div class="compare-col-head">Tier 2 — phi3.5 <span class="meta">1 conflicts · 768s · 2 tok/s</span></div>
     </div>
     
       <div class="compare-row">
@@ -93,11 +93,11 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
 <div class="conflict-card" id="C-0-0" style="border-left:3px solid #dc2626;background:#fee2e2">
   <div class="card-head">
     <span class="sev" style="background:#dc2626">critique</span>
-    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Fréquence des essais et inspections de l'éclairage de secours</strong>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement extérieur – chantiers de construction : 10 lux vs 20 lux</strong>
   </div>
-  <div class="card-desc">Les deux documents fixent des fréquences différentes pour les essais et inspections périodiques de l'éclairage de secours. ITM-CL 55.2 impose des essais tous les 3 mois et des inspections tous les 6 mois, tandis qu'ITM-ET 32.10 impose des essais tous les 6 mois et des inspections tous les 12 mois. L…</div>
-  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 14.3 <em>"Les éclairages de secours sont à essayer tous les trois mois et à inspecter régulièrement tous les six mois par du perso…"</em> → <strong>Essais : tous les 3 mois / Inspections : tous les 6 mois</strong></div><div class="src"><code>ITM-ET 32.10</code> Art. 15.8.3 <em>"Les éclairages de secours sont à essayer tous les six mois et à inspecter régulièrement tous les douze mois par du perso…"</em> → <strong>Essais : tous les 6 mois / Inspections : tous les 12 mois</strong></div></div>
-  <div class="card-rec"><em>Appliquer la fréquence la plus contraignante, soit celle d'ITM-CL 55.2 : essais tous les 3 mois et inspections tous les 6 mois par du personnel compétent. Le plan de maintenance doit être conçu sur ce…</em></div>
+  <div class="card-desc">Les deux documents fixent des niveaux d'éclairement minimaux différents pour les chantiers de construction à l'extérieur. ITM-CL 144.1 exige 10 lux pour les voies de circulation (véhicules et piétons) et les excavations/fouilles, tandis qu'ITM-CL 55.2 fixe à 20 lux le niveau nominal pour les chantie…</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 144.1</code> Art. 7.5 <em>"Voies de circulation (véhicules et piétons) : 10 lux / Excavations et fouilles : 10 lux"</em> → <strong>10 lux</strong></div><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.4.7 et 8.4.4.10 <em>"Chantiers de construction : 20 / Voies de circulation extérieures : 20"</em> → <strong>20 lux</strong></div></div>
+  <div class="card-rec"><em>Appliquer la valeur la plus contraignante : 20 lux pour les voies de circulation extérieures et pour les zones de chantier en général. ITM-CL 55.2 est le document de référence général sur l'éclairage …</em></div>
   <div class="rating-row" data-id="C-0-0">
     <button class="rate-btn" onclick="rate('C-0-0','valid')" title="Valid finding">✓ Valid</button>
     <button class="rate-btn" onclick="rate('C-0-0','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
@@ -105,18 +105,33 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
     <span class="rating-label" id="rl-C-0-0"></span>
   </div>
 </div></div>
-        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+        <div class="compare-col">
+<div class="conflict-card" id="L-0-0" style="border-left:3px solid #dc2626;background:#fee2e2">
+  <div class="card-head">
+    <span class="sev" style="background:#dc2626">critique</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Contradiction en matière d0f autonomie et délai de mise à jour des éclairages de secours</strong>
+  </div>
+  <div class="card-desc">Le document A exige une autonomie d'au moins 1 minute pour les éclairages de secours, tandis que le document B spécifie un test tous les trois mois et une inspection régulière toutes les six mois sans fournir de valeur numérique précise ou des directives sur la durée pendant laquelle ces tests doive…</div>
+  <div class="card-sources"><div class="src"><code>Document A</code> Art. 12.5 | Art. 14.3 <em>"L'éclairage de secours doit avoir une autonomie permettant d'évacuer tous les risques avant son extinction (arrêt des ma…"</em> → <strong>Minimum d'une autonomie de 1 minute</strong></div><div class="src"><code>Document B</code> Art. 14.2 | Art. 14.3 <em>"'Les éclairages de secours sont à essayer tous les trois mois et à inspecter régulièrement tous les six mois par du pers…"</em> → <strong>Test mensuel, inspection semestrielle</strong></div></div>
+  <div class="card-rec"><em>'Il est recommandé de définir une procédure claire pour la maintenance et le test des éclairages de secours afin d'assurer qu'ils respectent l'autonomie minimale requise. Cela peut impliquer un calend…</em></div>
+  <div class="rating-row" data-id="L-0-0">
+    <button class="rate-btn" onclick="rate('L-0-0','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('L-0-0','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('L-0-0','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-L-0-0"></span>
+  </div>
+</div></div>
       </div>
       <div class="compare-row">
         <div class="compare-col">
 <div class="conflict-card" id="C-0-1" style="border-left:3px solid #d97706;background:#fef3c7">
   <div class="card-head">
     <span class="sev" style="background:#d97706">majeur</span>
-    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Lieux de travail à danger particulier : obligation d'un double éclairage de secours</strong>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement extérieur – postes de ferraillage : 50 lux (CL 144.1) vs absence de référence dans CL 55.2</strong>
   </div>
-  <div class="card-desc">ITM-ET 32.10 prévoit explicitement, à l'article 15.7.7, que les lieux de travail à danger particulier doivent être équipés en plus d'un éclairage de secours standard (Art. 15.6), en sus de l'éclairage de secours spécifique à danger particulier. Cette exigence de double éclairage (Art. 15.6 + Art. 15…</div>
-  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 15.7.7 <em>"Les lieux de travail à danger particulier doivent être équipés en plus d'un éclairage de secours, tel que défini à l'art…"</em> → <strong>Double éclairage de secours obligatoire : spécifique (Art. 15.7) + standard (Art. 15.6)</strong></div><div class="src"><code>ITM-CL 55.2</code> Art. 11 <em>"L'éclairage de secours des lieux de travail à danger particulier doit être conforme aux stipulations des paragraphes 11.…"</em> → <strong>Aucune mention d'un cumul avec l'éclairage de secours standard de l'Art. 10</strong></div></div>
-  <div class="card-rec"><em>Appliquer l'exigence la plus contraignante d'ITM-ET 32.10 : les lieux de travail à danger particulier doivent être équipés à la fois de l'éclairage de secours spécifique (déclenchement ≤ 0,5 s, autono…</em></div>
+  <div class="card-desc">ITM-CL 144.1 fixe des niveaux spécifiques pour des postes de travail extérieurs propres au chantier (coffrage/bétonnage : 40 lux ; échafaudages/charpentes : 40 lux ; ferraillage : 50 lux ; scie circulaire : 100 lux). ITM-CL 55.2 ne contient pas ces catégories dans ses tableaux d'intensités nominales…</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 144.1</code> Art. 7.5 <em>"Postes de coffrage et de bétonnage : 40 lux / Echafaudages, charpentes métallique : 40 lux / Postes de ferraillage : 50 …"</em> → <strong>40 à 100 lux selon le poste</strong></div><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.4.7 <em>"Chantiers de construction : 20"</em> → <strong>20 lux (valeur unique pour tous les chantiers)</strong></div></div>
+  <div class="card-rec"><em>Appliquer les valeurs différenciées d'ITM-CL 144.1 comme valeurs minimales pour les postes spécifiques de chantier, celles-ci étant plus contraignantes et plus adaptées aux risques réels. La valeur gé…</em></div>
   <div class="rating-row" data-id="C-0-1">
     <button class="rate-btn" onclick="rate('C-0-1','valid')" title="Valid finding">✓ Valid</button>
     <button class="rate-btn" onclick="rate('C-0-1','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
@@ -128,14 +143,14 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
       </div>
       <div class="compare-row">
         <div class="compare-col">
-<div class="conflict-card" id="C-0-2" style="border-left:3px solid #d97706;background:#fef3c7">
+<div class="conflict-card" id="C-0-2" style="border-left:3px solid #dc2626;background:#fee2e2">
   <div class="card-head">
-    <span class="sev" style="background:#d97706">majeur</span>
-    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Référence de la valeur En dans la formule d'intensité minimale pour lieux à danger particulier</strong>
+    <span class="sev" style="background:#dc2626">critique</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement intérieur – voies de circulation : 10 lux vs 50/100 lux</strong>
   </div>
-  <div class="card-desc">La formule E=0,1×En est identique dans les deux documents pour l'éclairage de secours des lieux à danger particulier, mais la définition de En diffère. Dans ITM-CL 55.2 (Art. 11.4), En est défini par renvoi à 'l'intensité lumineuse minimale telle que définie à l'article 9 ci-dessus' (éclairage de sé…</div>
-  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 11.4 <em>"L'intensité minimale des lieux de travail à risque particulier doit être de: E=0,1xEn (où En est l'intensité lumineuse m…"</em> → <strong>En = intensité de l'éclairage de sécurité (Art. 9, soit 1/3 de l'éclairage normal)</strong></div><div class="src"><code>ITM-ET 32.10</code> Art. 15.7.4 <em>"L'intensité minimale des lieux de travail à risque particulier doit être de: E=0,1xEn (où En est l'intensité lumineuse m…"</em> → <strong>En = intensité lumineuse nominale des tableaux (Art. 15.4, valeur nominale du poste de travail)</strong></div></div>
-  <div class="card-rec"><em>Appliquer la définition d'ITM-ET 32.10 qui renvoie aux tableaux d'intensités nominales (Art. 15.4), car c'est la référence la plus claire et la plus directement applicable aux activités concernées. Ce…</em></div>
+  <div class="card-desc">Pour les voies de circulation intérieures, ITM-CL 144.1 fixe un minimum de 10 lux (couloirs, escaliers) tandis qu'ITM-CL 55.2 exige 50 lux pour les voies réservées aux personnes (§ 8.4.6.1) et 100 lux pour les voies mixtes personnes/véhicules (§ 8.4.6.2) et les escaliers (§ 8.4.6.3). L'écart est con…</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Voies de circulation, couloirs, escaliers : 10 lux"</em> → <strong>10 lux</strong></div><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.6.1 / 8.4.6.2 / 8.4.6.3 <em>"Pour personnes seulement : 50 / Pour personnes et véhicules : 100 / Escaliers, escaliers et trottoirs roulants, pentes :…"</em> → <strong>50 à 100 lux</strong></div></div>
+  <div class="card-rec"><em>Appliquer les valeurs d'ITM-CL 55.2 (50 lux minimum pour voies piétonnes, 100 lux pour voies mixtes et escaliers) qui sont plus contraignantes et correspondent à une norme ergonomique générale. La val…</em></div>
   <div class="rating-row" data-id="C-0-2">
     <button class="rate-btn" onclick="rate('C-0-2','valid')" title="Valid finding">✓ Valid</button>
     <button class="rate-btn" onclick="rate('C-0-2','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
@@ -150,11 +165,11 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
 <div class="conflict-card" id="C-0-3" style="border-left:3px solid #16a34a;background:#f0fdf4">
   <div class="card-head">
     <span class="sev" style="background:#16a34a">mineur</span>
-    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Intitulé de la section 8.4.15 / 15.4.15 : 'Industrie horlogère' vs 'Horlogeries, bijouteries, opticiens'</strong>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement intérieur – vestiaires/sanitaires : 120 lux vs 100 lux</strong>
   </div>
-  <div class="card-desc">Les tableaux d'intensités nominales présentent la même section de travail avec des intitulés différents. ITM-CL 55.2 intitule la section 8.4.15 'Industrie horlogère' tandis qu'ITM-ET 32.10 intitule la même section 15.4.15 'Horlogeries, bijouteries, opticiens'. Les valeurs numériques sont identiques …</div>
-  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.15 <em>"8.4.15. Industrie horlogère"</em> → <strong>Périmètre : industrie horlogère uniquement</strong></div><div class="src"><code>ITM-ET 32.10</code> Art. 15.4.15 <em>"15.4.15. Horlogeries, bijouteries, opticiens"</em> → <strong>Périmètre élargi : horlogeries, bijouteries, opticiens</strong></div></div>
-  <div class="card-rec"><em>Retenir l'intitulé le plus large d'ITM-ET 32.10 ('Horlogeries, bijouteries, opticiens') pour couvrir toutes les activités similaires. Les valeurs numériques étant identiques, il n'y a pas de conflit s…</em></div>
+  <div class="card-desc">Pour les vestiaires et sanitaires de chantier, ITM-CL 144.1 impose 120 lux (Art. 7.9), alors qu'ITM-CL 55.2 fixe 100 lux pour les vestiaires (§ 8.4.5.3.3), les salles de lavabos/douches (§ 8.4.5.3.4) et les toilettes (§ 8.4.5.3.5). Dans ce cas, c'est CL 144.1 qui est plus exigeant.</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Vestiaires, sanitaires : 120 lux"</em> → <strong>120 lux</strong></div><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.5.3.3 / 8.4.5.3.4 / 8.4.5.3.5 <em>"Vestiaires : 100 / Salles de lavabos, douches : 100 / Toilettes : 100"</em> → <strong>100 lux</strong></div></div>
+  <div class="card-rec"><em>Appliquer 120 lux conformément à ITM-CL 144.1, qui est la valeur la plus contraignante et spécifique au contexte de chantier (locaux souvent plus sombres et moins entretenus que dans un bâtiment perma…</em></div>
   <div class="rating-row" data-id="C-0-3">
     <button class="rate-btn" onclick="rate('C-0-3','valid')" title="Valid finding">✓ Valid</button>
     <button class="rate-btn" onclick="rate('C-0-3','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
@@ -166,14 +181,14 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
       </div>
       <div class="compare-row">
         <div class="compare-col">
-<div class="conflict-card" id="C-0-4" style="border-left:3px solid #16a34a;background:#f0fdf4">
+<div class="conflict-card" id="C-0-4" style="border-left:3px solid #d97706;background:#fef3c7">
   <div class="card-head">
-    <span class="sev" style="background:#16a34a">mineur</span>
-    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Éclairage des locaux d'hygiène sanitaires : valeur minimale explicite dans un seul document</strong>
+    <span class="sev" style="background:#d97706">majeur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement intérieur – bureaux/salles de dessin : 500 lux vs 500/750/1000 lux</strong>
   </div>
-  <div class="card-desc">ITM-ET 32.10 fixe à l'article 6.5.1 une intensité lumineuse minimale explicite de 100 Lux pour les locaux d'hygiène (vestiaires, douches, toilettes, lavabos). ITM-CL 55.2 mentionne bien 100 Lux pour ces locaux dans ses tableaux (Art. 8.4.5.3.3 à 8.4.5.3.5), mais sans article dédié à leur spécificité…</div>
-  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 6.5.1 <em>"Les locaux d'hygiène doivent être équipés d'un éclairage artificiel ayant une intensité lumineuse d'au moins 100 Lux."</em> → <strong>100 Lux minimum pour tous les locaux d'hygiène (obligation explicite)</strong></div><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.5.3.3 à 8.4.5.3.5 <em>"8.4.5.3.3. Vestiaires 100 / 8.4.5.3.4. Salles de lavabos, douches 100 / 8.4.5.3.5. Toilettes 100"</em> → <strong>100 Lux (dans les tableaux, sans article dédié)</strong></div></div>
-  <div class="card-rec"><em>Les deux documents convergent sur 100 Lux pour les locaux sanitaires. Appliquer cette valeur de 100 Lux comme minimum absolu pour tous les locaux d'hygiène, en s'appuyant sur l'article explicite 6.5.1…</em></div>
+  <div class="card-desc">ITM-CL 144.1 fixe uniformément 500 lux pour les 'locaux annexes (salles de dessin, bureaux)' (Art. 7.9). ITM-CL 55.2 distingue plusieurs niveaux selon le type de bureau : bureaux standard à 500 lux (§ 8.4.7.1), grands bureaux à haute réflexion à 750 lux (§ 8.4.7.2.2), grands bureaux à réflexion moye…</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Locaux annexes (salles de dessin, bureaux) : 500 lux"</em> → <strong>500 lux (uniforme)</strong></div><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.7.1 / 8.4.7.2.1 / 8.4.7.2.2 / 8.4.7.3 <em>"Bureaux : 500 / Grands bureaux à réflexion moyenne : 1.000 / Grands bureaux à haute réflexion : 750 / Dessin technique :…"</em> → <strong>500 à 1000 lux selon le type</strong></div></div>
+  <div class="card-rec"><em>Appliquer le tableau détaillé d'ITM-CL 55.2 pour tous les locaux administratifs et techniques de chantier. La valeur de 500 lux de CL 144.1 ne constitue qu'un minimum pour les bureaux simples ; les sa…</em></div>
   <div class="rating-row" data-id="C-0-4">
     <button class="rate-btn" onclick="rate('C-0-4','valid')" title="Valid finding">✓ Valid</button>
     <button class="rate-btn" onclick="rate('C-0-4','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
@@ -186,11 +201,11 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
   </section>
   <section class="pair-section">
     <div class="pair-header">
-      <h3>Pair 2: <code>ITM-CL-55.2</code> × <code>ITM-CL-144.1</code></h3>
+      <h3>Pair 2: <code>ITM-CL-144.1</code> × <code>ITM-ET-32.10</code></h3>
     </div>
     <div class="compare-header">
-      <div class="compare-col-head">Tier 1 — Claude claude-sonnet-4-6 <span class="meta">6 conflicts · 57.6s · $0.1137</span></div>
-      <div class="compare-col-head">Tier 2 — phi3.5 (not run) <span class="meta">not run</span></div>
+      <div class="compare-col-head">Tier 1 — Claude claude-sonnet-4-6 <span class="meta">4 conflicts · 64.3s · $0.1738</span></div>
+      <div class="compare-col-head">Tier 2 — phi3.5 <span class="meta">0 conflicts · 475s · 2 tok/s</span></div>
     </div>
     
       <div class="compare-row">
@@ -198,11 +213,11 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
 <div class="conflict-card" id="C-1-0" style="border-left:3px solid #d97706;background:#fef3c7">
   <div class="card-head">
     <span class="sev" style="background:#d97706">majeur</span>
-    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement extérieur – voies de circulation</strong>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement des chantiers de construction (extérieur) : 20 lux vs valeurs différenciées</strong>
   </div>
-  <div class="card-desc">Les deux documents fixent des valeurs d'éclairement minimales différentes pour les voies de circulation extérieures. ITM-CL 55.2 exige 20 lux (tableau 8.4.4.10) tandis qu'ITM-CL 144.1 n'exige que 10 lux pour les voies de circulation (véhicules et piétons) en chantier. Sur un chantier actif, les deux…</div>
-  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.4.10 <em>"Voies de circulation extérieures : 20 [Lux]"</em> → <strong>20 lux</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.5 <em>"Voies de circulation (véhicules et piétons) : 10 lux"</em> → <strong>10 lux</strong></div></div>
-  <div class="card-rec"><em>Appliquer la valeur la plus contraignante, soit 20 lux (ITM-CL 55.2), sauf si l'ITM accorde expressément un allégement pour les chantiers temporaires. ITM-CL 144.1 est un texte spécifique aux chantier…</em></div>
+  <div class="card-desc">L'ITM-ET 32.10 fixe une valeur unique de 20 lux pour l'ensemble des 'chantiers de construction' à l'extérieur. L'ITM-CL 144.1 établit quant à lui une grille de valeurs différenciées selon les zones et postes de travail (10, 20, 40, 50 ou 100 lux selon l'activité). Les deux documents s'appliquent sim…</div>
+  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 15.4.4.7 <em>"Chantiers de construction 20"</em> → <strong>20 lux (valeur unique, tous postes confondus)</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.5 <em>"Voies de circulation (véhicules et piétons) : 10 lux / Aires de chargement et de déchargement : 20 lux / Excavations et …"</em> → <strong>10 à 100 lux selon le poste de travail</strong></div></div>
+  <div class="card-rec"><em>Appliquer systématiquement la grille différenciée de l'ITM-CL 144.1, document spécifique aux chantiers, qui est plus récent (2004 vs 1997) et plus détaillé. La valeur de 20 lux d'ITM-ET 32.10 constitu…</em></div>
   <div class="rating-row" data-id="C-1-0">
     <button class="rate-btn" onclick="rate('C-1-0','valid')" title="Valid finding">✓ Valid</button>
     <button class="rate-btn" onclick="rate('C-1-0','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
@@ -214,14 +229,14 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
       </div>
       <div class="compare-row">
         <div class="compare-col">
-<div class="conflict-card" id="C-1-1" style="border-left:3px solid #d97706;background:#fef3c7">
+<div class="conflict-card" id="C-1-1" style="border-left:3px solid #dc2626;background:#fee2e2">
   <div class="card-head">
-    <span class="sev" style="background:#d97706">majeur</span>
-    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement extérieur – activités de chantier de construction</strong>
+    <span class="sev" style="background:#dc2626">critique</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Éclairage de secours : blocs autonomes obligatoires (CL 144.1) vs sources centrales admises (ET 32.10)</strong>
   </div>
-  <div class="card-desc">ITM-CL 55.2 fixe à 20 lux l'éclairage des chantiers de construction (tableau général), alors qu'ITM-CL 144.1 différencie plusieurs postes avec des valeurs allant de 10 lux (excavations) à 100 lux (machines dangereuses). La valeur générique de 20 lux d'ITM-CL 55.2 est insuffisante pour des postes spé…</div>
-  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.4.7 <em>"Chantiers de construction : 20 [Lux]"</em> → <strong>20 lux (valeur unique)</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.5 <em>"Postes de coffrage et de bétonnage : 40 lux / Echafaudages, charpentes métallique : 40 lux / Postes de ferraillage : 50 …"</em> → <strong>10 à 100 lux selon zone</strong></div></div>
-  <div class="card-rec"><em>Appliquer ITM-CL 144.1 (Art. 7.5) qui est le texte spécifique aux chantiers et le plus récent : il détaille par zone et prévoit des valeurs supérieures à 20 lux pour les postes à risque. Pour toute zo…</em></div>
+  <div class="card-desc">L'ITM-CL 144.1 interdit formellement l'utilisation de dispositifs No-break ou groupe électrogène pour alimenter l'éclairage de secours, imposant exclusivement des blocs autonomes. L'ITM-ET 32.10 admet au contraire une source de courant centrale (groupe électrogène, onduleur, deuxième réseau) pour l'…</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 144.1</code> Art. 7.17 <em>"Les installations d'éclairage de secours doivent être réalisées obligatoirement à l'aide de blocs autonomes. L'utilisati…"</em> → <strong>Blocs autonomes OBLIGATOIRES — No-break et groupe électrogène INTERDITS</strong></div><div class="src"><code>ITM-ET 32.10</code> Art. 15.5.2 <em>"L'éclairage de sécurité doit à cet effet être alimenté par une source d'énergie électrique indépendante (p.ex. groupe él…"</em> → <strong>Groupe électrogène, onduleur ou second réseau ADMIS</strong></div><div class="src"><code>ITM-ET 32.10</code> Art. 15.6.2 <em>"L'éclairage de secours est à réaliser de préférence par des sources de courant autonomes."</em> → <strong>Sources autonomes préférables mais non obligatoires</strong></div><div class="src"><code>ITM-ET 32.10</code> Art. 15.6.3 <em>"Lorsque l'éclairage de secours est alimenté par une source de courant centrale, le câblage alimentant cet éclairage doit…"</em> → <strong>Source centrale admise sous conditions (câblage résistant au feu 1h)</strong></div></div>
+  <div class="card-rec"><em>Sur chantier, appliquer l'ITM-CL 144.1 (document spécifique et plus récent) : utiliser exclusivement des blocs autonomes pour l'éclairage de secours. Le recours à un groupe électrogène ou un No-break …</em></div>
   <div class="rating-row" data-id="C-1-1">
     <button class="rate-btn" onclick="rate('C-1-1','valid')" title="Valid finding">✓ Valid</button>
     <button class="rate-btn" onclick="rate('C-1-1','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
@@ -233,14 +248,14 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
       </div>
       <div class="compare-row">
         <div class="compare-col">
-<div class="conflict-card" id="C-1-2" style="border-left:3px solid #dc2626;background:#fee2e2">
+<div class="conflict-card" id="C-1-2" style="border-left:3px solid #16a34a;background:#f0fdf4">
   <div class="card-head">
-    <span class="sev" style="background:#dc2626">critique</span>
-    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement intérieur – voies de circulation</strong>
+    <span class="sev" style="background:#16a34a">mineur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Éclairage de secours : intensité minimale — mesure à 20 cm du sol (ET 32.10) non précisée dans CL 144.1</strong>
   </div>
-  <div class="card-desc">Pour les voies de circulation intérieures, ITM-CL 55.2 exige 50 lux (personnes seules) ou 100 lux (personnes et véhicules), et 100 lux pour les escaliers. ITM-CL 144.1 n'exige que 10 lux pour 'voies de circulation, couloirs, escaliers' en chantier. L'écart est considérable (facteur 5 à 10) et crée u…</div>
-  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.6 <em>"Pour personnes seulement : 50 [Lux] / Pour personnes et véhicules : 100 [Lux] / Escaliers, escaliers et trottoirs roulan…"</em> → <strong>50 à 100 lux</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Voies de circulation, couloirs, escaliers : 10 lux"</em> → <strong>10 lux</strong></div></div>
-  <div class="card-rec"><em>La valeur de 10 lux d'ITM-CL 144.1 est manifestement insuffisante au regard des 50-100 lux d'ITM-CL 55.2. Appliquer a minima 50 lux pour les voies piétonnes intérieures et 100 lux pour les escaliers e…</em></div>
+  <div class="card-desc">Les deux documents exigent un minimum de 1 lux pour l'éclairage de secours des voies de circulation/couloirs. Cependant, ITM-ET 32.10 précise explicitement que cette valeur de 1 lux doit être mesurée 'à une distance de 20 centimètres du sol (ou des marches d'escaliers) à la fin de l'autonomie de fon…</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 144.1</code> Art. 7.16 <em>"Les niveaux d'éclairement minimaux à l'intérieur pour l'éclairage de secours sont : - Voies de circulation, couloirs : 1…"</em> → <strong>1 lux 'au sol' — hauteur et moment de mesure non précisés</strong></div><div class="src"><code>ITM-ET 32.10</code> Art. 15.6.9 <em>"L'éclairage de secours doit avoir une intensité lumineuse minimale de 1 Lux. Cette intensité minimale est à mesurer à un…"</em> → <strong>1 lux mesuré à 20 cm du sol, en fin d'autonomie</strong></div></div>
+  <div class="card-rec"><em>Appliquer la méthode de mesure la plus précise et la plus contraignante définie par ITM-ET 32.10 : mesurer à 20 cm du sol, en fin d'autonomie (moment le plus défavorable). Cette précision est essentie…</em></div>
   <div class="rating-row" data-id="C-1-2">
     <button class="rate-btn" onclick="rate('C-1-2','valid')" title="Valid finding">✓ Valid</button>
     <button class="rate-btn" onclick="rate('C-1-2','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
@@ -255,11 +270,11 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
 <div class="conflict-card" id="C-1-3" style="border-left:3px solid #d97706;background:#fef3c7">
   <div class="card-head">
     <span class="sev" style="background:#d97706">majeur</span>
-    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement intérieur – bureaux et salles de dessin de chantier</strong>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Autonomie de l'éclairage de secours : 60 minutes (ET 32.10) non mentionnée dans CL 144.1</strong>
   </div>
-  <div class="card-desc">Pour les bureaux, ITM-CL 55.2 exige 500 lux et 750 lux pour le dessin technique. ITM-CL 144.1 ne prévoit que 500 lux pour 'locaux annexes (salles de dessin, bureaux)', sans distinction. La valeur de 750 lux spécifique au dessin technique d'ITM-CL 55.2 est ignorée dans ITM-CL 144.1.</div>
-  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.7 <em>"Bureaux : 500 [Lux] / Dessin technique : 750 [Lux]"</em> → <strong>500 lux (bureaux), 750 lux (dessin technique)</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Locaux annexes (salles de dessin, bureaux) : 500 lux"</em> → <strong>500 lux (sans distinction)</strong></div></div>
-  <div class="card-rec"><em>Appliquer 750 lux pour les salles de dessin technique de chantier conformément à ITM-CL 55.2 Art. 8.4.7.3, qui est plus précis et plus contraignant pour cette activité spécifique.</em></div>
+  <div class="card-desc">L'ITM-ET 32.10 fixe explicitement une autonomie minimale de 60 minutes pour l'éclairage de secours (Art. 15.6.8). L'ITM-CL 144.1 ne mentionne aucune durée minimale d'autonomie pour l'éclairage de secours de chantier. Cette absence de spécification dans le document spécifique chantier crée une lacune…</div>
+  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 15.6.8 <em>"L'éclairage de secours doit avoir une autonomie de fonctionnement d'au moins 60 minutes."</em> → <strong>Autonomie minimale : 60 minutes</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.16 à 7.19 <em>"Les niveaux d'éclairement minimaux à l'intérieur pour l'éclairage de secours sont : - Voies de circulation, couloirs : 1…"</em> → <strong>Autonomie non précisée</strong></div></div>
+  <div class="card-rec"><em>En l'absence de spécification dans ITM-CL 144.1, appliquer l'exigence d'autonomie de 60 minutes d'ITM-ET 32.10 comme référence minimale. Les blocs autonomes sélectionnés pour les chantiers doivent êtr…</em></div>
   <div class="rating-row" data-id="C-1-3">
     <button class="rate-btn" onclick="rate('C-1-3','valid')" title="Valid finding">✓ Valid</button>
     <button class="rate-btn" onclick="rate('C-1-3','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
@@ -269,64 +284,26 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
 </div></div>
         <div class="compare-col"><div class="conflict-card empty">—</div></div>
       </div>
-      <div class="compare-row">
-        <div class="compare-col">
-<div class="conflict-card" id="C-1-4" style="border-left:3px solid #16a34a;background:#f0fdf4">
-  <div class="card-head">
-    <span class="sev" style="background:#16a34a">mineur</span>
-    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement intérieur – vestiaires et sanitaires</strong>
-  </div>
-  <div class="card-desc">ITM-CL 55.2 exige 100 lux pour les vestiaires, douches et toilettes. ITM-CL 144.1 exige 120 lux pour les vestiaires et sanitaires sur chantier. Il y a une légère divergence, ITM-CL 144.1 étant plus exigeant sur ce point.</div>
-  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.5.3 <em>"Vestiaires : 100 [Lux] / Salles de lavabos, douches : 100 [Lux] / Toilettes : 100 [Lux]"</em> → <strong>100 lux</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Vestiaires, sanitaires : 120 lux"</em> → <strong>120 lux</strong></div></div>
-  <div class="card-rec"><em>Appliquer 120 lux conformément à ITM-CL 144.1, qui est plus récent et plus contraignant pour les installations de chantier. Cette valeur est cohérente avec l'objectif de meilleures conditions d'hygièn…</em></div>
-  <div class="rating-row" data-id="C-1-4">
-    <button class="rate-btn" onclick="rate('C-1-4','valid')" title="Valid finding">✓ Valid</button>
-    <button class="rate-btn" onclick="rate('C-1-4','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
-    <button class="rate-btn" onclick="rate('C-1-4','uncertain')" title="Uncertain">? Unsure</button>
-    <span class="rating-label" id="rl-C-1-4"></span>
-  </div>
-</div></div>
-        <div class="compare-col"><div class="conflict-card empty">—</div></div>
-      </div>
-      <div class="compare-row">
-        <div class="compare-col">
-<div class="conflict-card" id="C-1-5" style="border-left:3px solid #d97706;background:#fef3c7">
-  <div class="card-head">
-    <span class="sev" style="background:#d97706">majeur</span>
-    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement intérieur – entrepôts</strong>
-  </div>
-  <div class="card-desc">ITM-CL 55.2 distingue plusieurs catégories d'entrepôts avec des niveaux de 50 à 200 lux. ITM-CL 144.1 ne prévoit que 150 lux pour 'entrepôts, garages' sans distinction. Cette valeur unique de 150 lux est en contradiction avec la valeur de 50 lux pour zones de circulation en entrepôts et la valeur de…</div>
-  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.5.1 <em>"Zones de circulation dans les entrepôts : 50 [Lux] / Entrepôts pour grandes pièces : 50 [Lux] / Entrepôts pour pièces de…"</em> → <strong>50 à 200 lux selon usage</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Entrepôts, garages : 150 lux"</em> → <strong>150 lux (valeur unique)</strong></div></div>
-  <div class="card-rec"><em>Appliquer une approche par zones : 150 lux comme minimum général (ITM-CL 144.1), monter à 200 lux pour les zones avec lecture de documents (ITM-CL 55.2 Art. 8.4.5.1.4). La valeur de 150 lux d'ITM-CL 1…</em></div>
-  <div class="rating-row" data-id="C-1-5">
-    <button class="rate-btn" onclick="rate('C-1-5','valid')" title="Valid finding">✓ Valid</button>
-    <button class="rate-btn" onclick="rate('C-1-5','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
-    <button class="rate-btn" onclick="rate('C-1-5','uncertain')" title="Uncertain">? Unsure</button>
-    <span class="rating-label" id="rl-C-1-5"></span>
-  </div>
-</div></div>
-        <div class="compare-col"><div class="conflict-card empty">—</div></div>
-      </div>
   </section>
   <section class="pair-section">
     <div class="pair-header">
-      <h3>Pair 3: <code>ITM-ET-32.10</code> × <code>ITM-CL-144.1</code></h3>
+      <h3>Pair 3: <code>ITM-CL-55.2</code> × <code>ITM-ET-32.10</code></h3>
     </div>
     <div class="compare-header">
-      <div class="compare-col-head">Tier 1 — Claude claude-sonnet-4-6 <span class="meta">6 conflicts · 59.7s · $0.1738</span></div>
-      <div class="compare-col-head">Tier 2 — phi3.5 (not run) <span class="meta">not run</span></div>
+      <div class="compare-col-head">Tier 1 — Claude claude-sonnet-4-6 <span class="meta">5 conflicts · 61.8s · $0.1840</span></div>
+      <div class="compare-col-head">Tier 2 — phi3.5 <span class="meta">1 conflicts · 659s · 0 tok/s</span></div>
     </div>
     
       <div class="compare-row">
         <div class="compare-col">
-<div class="conflict-card" id="C-2-0" style="border-left:3px solid #dc2626;background:#fee2e2">
+<div class="conflict-card" id="C-2-0" style="border-left:3px solid #d97706;background:#fef3c7">
   <div class="card-head">
-    <span class="sev" style="background:#dc2626">critique</span>
-    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement des voies de circulation intérieures : 50 lux vs 10 lux</strong>
+    <span class="sev" style="background:#d97706">majeur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Fréquence des essais de l'éclairage de secours : 3 mois vs 6 mois</strong>
   </div>
-  <div class="card-desc">Pour les voies de circulation intérieures (piétons uniquement), l'ITM-ET 32.10 fixe un minimum de 50 lux, tandis que l'ITM-CL 144.1 n'exige que 10 lux pour les voies de circulation, couloirs et escaliers intérieurs de chantier. Cette divergence d'un facteur 5 peut conduire à des choix d'équipements …</div>
-  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 15.4.6.1 <em>"Pour personnes seulement 50"</em> → <strong>50 lux (voies de circulation intérieures, piétons)</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Voies de circulation, couloirs, escaliers : 10 lux"</em> → <strong>10 lux (voies de circulation intérieures de chantier)</strong></div></div>
-  <div class="card-rec"><em>Appliquer la valeur la plus contraignante de 50 lux pour toutes les voies de circulation intérieures, y compris sur chantier, dès lors que des travailleurs y circulent de façon régulière. La valeur de…</em></div>
+  <div class="card-desc">Les deux documents fixent des fréquences différentes pour les essais périodiques de l'éclairage de secours. ITM-CL 55.2 impose un essai tous les trois mois, tandis qu'ITM-ET 32.10 prévoit un essai tous les six mois. Cette divergence crée une incertitude directe pour l'exploitant quant au régime de m…</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 14.3 <em>"Les éclairages de secours sont à essayer tous les trois mois et à inspecter régulièrement tous les six mois par du perso…"</em> → <strong>Essai tous les 3 mois / Inspection tous les 6 mois</strong></div><div class="src"><code>ITM-ET 32.10</code> Art. 15.8.3 <em>"Les éclairages de secours sont à essayer tous les six mois et à inspecter régulièrement tous les douze mois par du perso…"</em> → <strong>Essai tous les 6 mois / Inspection tous les 12 mois</strong></div></div>
+  <div class="card-rec"><em>Appliquer la fréquence la plus contraignante, soit celle d'ITM-CL 55.2 : essai tous les 3 mois et inspection tous les 6 mois. ITM-CL 55.2 est le document spécialisé en éclairage et sa prescription plu…</em></div>
   <div class="rating-row" data-id="C-2-0">
     <button class="rate-btn" onclick="rate('C-2-0','valid')" title="Valid finding">✓ Valid</button>
     <button class="rate-btn" onclick="rate('C-2-0','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
@@ -334,18 +311,33 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
     <span class="rating-label" id="rl-C-2-0"></span>
   </div>
 </div></div>
-        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+        <div class="compare-col">
+<div class="conflict-card" id="L-2-0" style="border-left:3px solid #dc2626;background:#fee2e2">
+  <div class="card-head">
+    <span class="sev" style="background:#dc2626">critique</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Limite de largeur des escaliers et portes vs. Signalisation normalisée pour les voies d'évacuation spécifiques à la sécurité incendie</strong>
+  </div>
+  <div class="card-desc">Le document A exige une largeur minimale de 0,80 m pour les escaliers et la signification des voies d'évacuation (Art. 24.15), tandis que le Document B spécifie qu'il faut un éclairage minimum de 1 Lux sans mentionner explicitement une largeur minimale ou l'utilisation de signalisation normalisée, c…</div>
+  <div class="card-sources"><div class="src"><code>Document A</code> Art. 24.15</div></div>
+  <div class="card-rec"><em>Il est nécessaire d'établir une largeur minimale pour les escaliers et des exigences claires concernant la signalisation normalisée, en s'inspirant de l0Document A ou combiner les deux documents.</em></div>
+  <div class="rating-row" data-id="L-2-0">
+    <button class="rate-btn" onclick="rate('L-2-0','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('L-2-0','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('L-2-0','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-L-2-0"></span>
+  </div>
+</div></div>
       </div>
       <div class="compare-row">
         <div class="compare-col">
-<div class="conflict-card" id="C-2-1" style="border-left:3px solid #dc2626;background:#fee2e2">
+<div class="conflict-card" id="C-2-1" style="border-left:3px solid #d97706;background:#fef3c7">
   <div class="card-head">
-    <span class="sev" style="background:#dc2626">critique</span>
-    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement des voies de circulation intérieures mixtes (piétons + véhicules) : 100 lux vs 10 lux</strong>
+    <span class="sev" style="background:#d97706">majeur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Fréquence des inspections de l'éclairage de secours : 6 mois vs 12 mois</strong>
   </div>
-  <div class="card-desc">L'ITM-ET 32.10 exige 100 lux pour les voies de circulation intérieures empruntées à la fois par des piétons et des véhicules. L'ITM-CL 144.1 ne prévoit que 10 lux pour l'ensemble des voies de circulation intérieures sans distinguer la nature des usagers. Sur un chantier, les engins et les piétons co…</div>
-  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 15.4.6.2 <em>"Pour personnes et véhicules 100"</em> → <strong>100 lux (voies mixtes intérieures)</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Voies de circulation, couloirs, escaliers : 10 lux"</em> → <strong>10 lux (sans distinction du type d'usager)</strong></div></div>
-  <div class="card-rec"><em>Appliquer 100 lux pour toutes les voies de circulation intérieures où des véhicules et des piétons coexistent, conformément à l'ITM-ET 32.10, qui représente l'exigence la plus contraignante et corresp…</em></div>
+  <div class="card-desc">Corollaire direct du conflit C1 : la périodicité des inspections approfondies par personnel compétent diffère d'un facteur 2 entre les deux documents. ITM-CL 55.2 exige une inspection tous les six mois, ITM-ET 32.10 tous les douze mois.</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 14.3 <em>"Les éclairages de secours sont à essayer tous les trois mois et à inspecter régulièrement tous les six mois par du perso…"</em> → <strong>Inspection tous les 6 mois</strong></div><div class="src"><code>ITM-ET 32.10</code> Art. 15.8.3 <em>"Les éclairages de secours sont à essayer tous les six mois et à inspecter régulièrement tous les douze mois par du perso…"</em> → <strong>Inspection tous les 12 mois</strong></div></div>
+  <div class="card-rec"><em>Retenir la fréquence la plus contraignante d'ITM-CL 55.2 : inspection tous les 6 mois. Cette prescription spécialisée prime sur le document général.</em></div>
   <div class="rating-row" data-id="C-2-1">
     <button class="rate-btn" onclick="rate('C-2-1','valid')" title="Valid finding">✓ Valid</button>
     <button class="rate-btn" onclick="rate('C-2-1','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
@@ -360,11 +352,11 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
 <div class="conflict-card" id="C-2-2" style="border-left:3px solid #d97706;background:#fef3c7">
   <div class="card-head">
     <span class="sev" style="background:#d97706">majeur</span>
-    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement des escaliers intérieurs : 100 lux vs 10 lux</strong>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Éclairage de sécurité : formulation de l'intensité minimale (obligation vs recommandation)</strong>
   </div>
-  <div class="card-desc">L'ITM-ET 32.10 prévoit 100 lux pour les escaliers intérieurs, les escaliers roulants et les pentes. L'ITM-CL 144.1 regroupe les escaliers avec les voies de circulation et couloirs à 10 lux seulement. Les escaliers de chantier, souvent provisoires et non protégés, présentent un risque de chute élevé …</div>
-  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 15.4.6.3 <em>"Escaliers, escaliers et trottoirs roulants, pentes 100"</em> → <strong>100 lux</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Voies de circulation, couloirs, escaliers : 10 lux"</em> → <strong>10 lux</strong></div></div>
-  <div class="card-rec"><em>Appliquer 100 lux sur tous les escaliers intérieurs de chantier, conformément à l'ITM-ET 32.10. L'escalier est une zone à risque élevé de chute qui ne peut pas être traitée au même niveau d'exigence q…</em></div>
+  <div class="card-desc">Les deux documents fixent le même seuil minimal d'un tiers de l'éclairage normal pour l'éclairage de sécurité, mais avec des formulations modales différentes. ITM-CL 55.2 emploie 'doit avoir' (obligation) et 'devrait avoir' (recommandation) dans la même phrase, ce qui crée une ambiguïté sur le carac…</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 9.3 <em>"L'éclairage de sécurité doit avoir une intensité d'au moins un tiers de l'intensité de l'éclairage normal et devrait avo…"</em> → <strong>Minimum obligatoire : 1/3 En ; cible recommandée : 1×En</strong></div><div class="src"><code>ITM-ET 32.10</code> Art. 15.5.3 <em>"L'intensité de l'éclairage de sécurité devrait être la même que celle de l'éclairage normal, et ne peut être de moins d'…"</em> → <strong>Minimum obligatoire : 1/3 En ; cible recommandée : 1×En</strong></div></div>
+  <div class="card-rec"><em>Les deux documents convergent sur le minimum obligatoire de 1/3 de l'éclairage normal. Appliquer ce seuil comme exigence minimale absolue. Pour les lieux de travail à risque, viser 1×En conformément à…</em></div>
   <div class="rating-row" data-id="C-2-2">
     <button class="rate-btn" onclick="rate('C-2-2','valid')" title="Valid finding">✓ Valid</button>
     <button class="rate-btn" onclick="rate('C-2-2','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
@@ -379,11 +371,11 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
 <div class="conflict-card" id="C-2-3" style="border-left:3px solid #16a34a;background:#f0fdf4">
   <div class="card-head">
     <span class="sev" style="background:#16a34a">mineur</span>
-    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement des vestiaires et sanitaires : 100 lux vs 120 lux</strong>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Référence normative de l'éclairage de sécurité : absence dans ITM-ET 32.10 vs présence dans ITM-CL 55.2</strong>
   </div>
-  <div class="card-desc">L'ITM-ET 32.10 fixe à 100 lux le niveau minimal pour les vestiaires, les salles de lavabos et douches, et les toilettes. L'ITM-CL 144.1 exige 120 lux pour les vestiaires et sanitaires de chantier. Bien que la différence soit faible (20 lux), les deux documents imposent des valeurs différentes pour d…</div>
-  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 15.4.5.3.3 / 15.4.5.3.4 / 15.4.5.3.5 <em>"Vestiaires 100 / Salles de lavabos, douches 100 / Toilettes 100"</em> → <strong>100 lux</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Vestiaires, sanitaires : 120 lux"</em> → <strong>120 lux</strong></div></div>
-  <div class="card-rec"><em>Appliquer la valeur la plus contraignante de 120 lux pour les vestiaires et sanitaires de chantier, conformément à l'ITM-CL 144.1 qui est le document spécifique au contexte du chantier et plus récent …</em></div>
+  <div class="card-desc">ITM-CL 55.2 fait référence explicitement à la norme DIN 57108 et aux prescriptions VDE 0108 pour la réalisation de l'éclairage de secours. ITM-ET 32.10 reprend cette même référence à l'article 15.6.10 pour l'éclairage de secours général, mais ne la mentionne pas pour l'éclairage de secours des lieux…</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 10.10 <em>"L'éclairage de secours doit être réalisé, sans préjudice des stipulations du paragraphe 10.8 ci-dessus suivant les dispo…"</em> → <strong>Norme DIN 57108 / VDE 0108 applicable à l'éclairage de secours</strong></div><div class="src"><code>ITM-ET 32.10</code> Art. 15.6.10 <em>"L'éclairage de secours doit être réalisé, sans préjudice des stipulations du paragraphe 15.6.8 ci-dessus suivant les dis…"</em> → <strong>Norme DIN 57108 / VDE 0108 applicable à l'éclairage de secours général uniquement</strong></div></div>
+  <div class="card-rec"><em>Appliquer la norme DIN 57108 / VDE 0108 à l'ensemble des éclairages de secours, y compris pour les lieux à danger particulier, par extension logique des deux documents. Mentionner explicitement cette …</em></div>
   <div class="rating-row" data-id="C-2-3">
     <button class="rate-btn" onclick="rate('C-2-3','valid')" title="Valid finding">✓ Valid</button>
     <button class="rate-btn" onclick="rate('C-2-3','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
@@ -395,38 +387,19 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
       </div>
       <div class="compare-row">
         <div class="compare-col">
-<div class="conflict-card" id="C-2-4" style="border-left:3px solid #16a34a;background:#f0fdf4">
+<div class="conflict-card" id="C-2-4" style="border-left:3px solid #d97706;background:#fef3c7">
   <div class="card-head">
-    <span class="sev" style="background:#16a34a">mineur</span>
-    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement des bureaux et salles de dessin : 500 lux vs 500 lux (cohérence apparente mais périmètre différent)</strong>
+    <span class="sev" style="background:#d97706">majeur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Éclairage de secours des lieux à danger particulier : obligation de double éclairage absente dans ITM-CL 55.2</strong>
   </div>
-  <div class="card-desc">Les deux documents fixent 500 lux pour les bureaux (ITM-ET 32.10, Art. 15.4.7.1) et les 'locaux annexes (salles de dessin, bureaux)' (ITM-CL 144.1, Art. 7.9). Cependant, l'ITM-ET 32.10 distingue ensuite des sous-catégories de bureaux (grands bureaux à réflexion moyenne : 1000 lux, grands bureaux à h…</div>
-  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 15.4.7.3 <em>"Dessin technique 750"</em> → <strong>750 lux pour le dessin technique</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Locaux annexes (salles de dessin, bureaux) : 500 lux"</em> → <strong>500 lux pour salles de dessin et bureaux</strong></div></div>
-  <div class="card-rec"><em>Pour les salles de dessin technique sur chantier (plans, relevés, BIM sur écran), appliquer 750 lux conformément à l'ITM-ET 32.10 Art. 15.4.7.3, qui est plus spécifique et plus contraignant que la cat…</em></div>
+  <div class="card-desc">ITM-ET 32.10 ajoute à l'article 15.7.7 une exigence supplémentaire absente d'ITM-CL 55.2 : les lieux de travail à danger particulier doivent être équipés, en plus de l'éclairage de secours spécifique (0,5 s, 15 Lux min), d'un éclairage de secours standard conforme à l'article 15.6 (15 s, 1 Lux). ITM…</div>
+  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 15.7.7 <em>"Les lieux de travail à danger particulier doivent être équipés en plus d'un éclairage de secours, tel que défini à l'art…"</em> → <strong>Double éclairage de secours obligatoire pour les zones à danger particulier</strong></div><div class="src"><code>ITM-CL 55.2</code> Art. 11 <em>"L'éclairage de secours des lieux de travail à danger particulier doit être conforme aux stipulations des paragraphes 11.…"</em> → <strong>Un seul éclairage de secours spécifique (0,5 s, 15 Lux) — absence d'exigence de double éclairage</strong></div></div>
+  <div class="card-rec"><em>Appliquer l'exigence plus contraignante d'ITM-ET 32.10 : équiper les lieux à danger particulier d'un éclairage de secours rapide (0,5 s, ≥15 Lux, autonomie ≥1 min) ET d'un éclairage de secours standar…</em></div>
   <div class="rating-row" data-id="C-2-4">
     <button class="rate-btn" onclick="rate('C-2-4','valid')" title="Valid finding">✓ Valid</button>
     <button class="rate-btn" onclick="rate('C-2-4','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
     <button class="rate-btn" onclick="rate('C-2-4','uncertain')" title="Uncertain">? Unsure</button>
     <span class="rating-label" id="rl-C-2-4"></span>
-  </div>
-</div></div>
-        <div class="compare-col"><div class="conflict-card empty">—</div></div>
-      </div>
-      <div class="compare-row">
-        <div class="compare-col">
-<div class="conflict-card" id="C-2-5" style="border-left:3px solid #16a34a;background:#f0fdf4">
-  <div class="card-head">
-    <span class="sev" style="background:#16a34a">mineur</span>
-    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement des quais de chargement intérieurs : 100 lux vs non spécifié dans ITM-CL 144.1</strong>
-  </div>
-  <div class="card-desc">L'ITM-ET 32.10 prévoit explicitement 100 lux pour les quais de chargement intérieurs (Art. 15.4.6.4). L'ITM-CL 144.1 mentionne les 'aires de chargement et de déchargement' uniquement pour l'extérieur (20 lux, Art. 7.5), sans prévoir de valeur pour les zones de chargement/déchargement intérieures d'u…</div>
-  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 15.4.6.4 <em>"Quais de chargement 100"</em> → <strong>100 lux (intérieur)</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.5 <em>"Aires de chargement et de déchargement : 20 lux"</em> → <strong>20 lux (extérieur uniquement, lacune pour l'intérieur)</strong></div></div>
-  <div class="card-rec"><em>Pour les zones de chargement/déchargement intérieures sur chantier, appliquer 100 lux conformément à l'ITM-ET 32.10 Art. 15.4.6.4, par analogie et par principe de précaution. L'ITM-CL 144.1 Art. 7.9 i…</em></div>
-  <div class="rating-row" data-id="C-2-5">
-    <button class="rate-btn" onclick="rate('C-2-5','valid')" title="Valid finding">✓ Valid</button>
-    <button class="rate-btn" onclick="rate('C-2-5','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
-    <button class="rate-btn" onclick="rate('C-2-5','uncertain')" title="Uncertain">? Unsure</button>
-    <span class="rating-label" id="rl-C-2-5"></span>
   </div>
 </div></div>
         <div class="compare-col"><div class="conflict-card empty">—</div></div>

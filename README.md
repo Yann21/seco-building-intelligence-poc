@@ -76,9 +76,9 @@ The current production path sends document text to the Anthropic API. For a tech
 | 2 · CPU local | Ollama + phi3.5 / llama3.2:3b | Fully air-gapped | $0.00 | Reduced |
 | 3 · GPU private | Mistral 7B on g4dn.xlarge / T4 | Private VPC | ~$0.01 on-demand | Good |
 
-Tier 2 (CPU) is viable for a confidentiality-first deployment: a quantized 3.8B model runs on any developer machine, data never leaves the process, and the pairwise cache means inference only runs on new document pairs. Quality degrades on complex legal French — the benchmark document (`documentation/llm_benchmark.html`) provides a human-auditable side-by-side comparison for experts to validate.
+Tier 2 (CPU) is the weakest option in practice. Benchmarking phi3.5 (3.8B) against the actual ITM documents shows it cannot reliably handle 32k-token French legal inputs: it found 2 conflicts across 3 pairs vs. 9 for Claude, hallucinated one conflict from an adjacent domain (egress geometry rather than lighting), and ran at ~1.7 tok/s — roughly 10 minutes per pair, or 30 minutes for a 3-document cluster. Acceptable only when confidentiality is the hard constraint and latency is not.
 
-Tier 3 is the right balance for an internal SECO deployment: a private GPU instance (or on-premises RTX-class workstation) delivers near-API quality at ~40× lower marginal cost, with no external data transfer. See `documentation/costing.html` for the full breakdown including g4dn.xlarge spin-up cost projections.
+Tier 3 is the right balance for an internal SECO deployment: a private GPU instance (or on-premises RTX-class workstation) delivers near-API quality at ~40× lower marginal cost, with no external data transfer, and ~30s per pair vs. 10 min on CPU. Mistral 7B at Q4_K_M quantization fits in 4.1 GB VRAM and handles long French regulatory text well. See `documentation/costing.html` for the full breakdown including g4dn.xlarge spin-up cost projections.
 
 ### API dependency and cost model
 
@@ -106,3 +106,13 @@ All live token usage and cost is logged to `usage_log.jsonl` and exposed at `GET
 The resolution workflow already captures the most valuable long-term asset: expert decisions on ambiguous regulatory points. At scale, that becomes a **precedent database** — searchable by topic, by regulation pair, by building type. Combined with a RAG layer over the full ITM/PAG corpus, an inspector could query "what lux level applies to a chantier corridor under CL-144.1 vs CL-55.2" and get back the conflict, the recommendation, and any prior resolution by a SECO expert. That's the product worth building.
 
 Three months of work: structured document ingest pipeline (OCR + chunking), PostgreSQL-backed precedent store, RAG query interface, basic auth to scope resolutions by team.
+
+### To implement: document versioning and freshness tracking
+
+The core value proposition depends on the corpus staying current — a conflict resolver running on outdated regulations gives wrong answers confidently. This needs two things:
+
+1. **Version detection**: each document in `extract.py` carries a `date` field, but there is no mechanism to detect when ITM publishes an updated version. The right approach is a periodic crawler against the ITM public document URLs (already stored in `DOCS_META`) that compares the remote file hash against the cached `content_hash`. A change triggers re-extraction and invalidates all pair caches for that document's cluster.
+
+2. **Freshness surface**: the UI should show document dates and flag documents older than a configurable threshold (e.g. >2 years without a known update). This gives inspectors a signal that the conflict analysis may be based on superseded text — especially important for chantier regulations which are revised more frequently than general prescriptions.
+
+This is where the pairwise cache architecture pays off: updating one document in a 10-document cluster triggers C−1 new API calls, not a full rebuild.
