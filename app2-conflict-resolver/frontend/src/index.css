@@ -127,8 +127,23 @@ html, body, #root {
   flex-shrink: 0;
   background: var(--surface);
   border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.cluster-sidebar-top {
+  padding: 12px 8px 8px;
+  flex-shrink: 0;
+}
+
+.cluster-sidebar-docs {
+  flex: 1;
   overflow-y: auto;
-  padding: 12px 8px;
+  padding: 0 8px 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: 4px;
 }
 
 .cluster-sidebar-label {
@@ -183,14 +198,7 @@ html, body, #root {
   flex-shrink: 0;
 }
 
-.cluster-docs {
-  padding: 6px 4px 4px 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-/* Doc cards (used inside cluster-docs) */
+/* Doc cards */
 .doc-card {
   padding: 8px 10px;
   background: var(--surface2);
@@ -286,7 +294,7 @@ html, body, #root {
   user-select: none;
 }
 
-.conflict-header:hover { background: rgba(255,255,255,0.02); }
+.conflict-header:hover { background: var(--surface2); }
 
 .severity-badge {
   padding: 3px 9px;

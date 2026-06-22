@@ -343,7 +343,7 @@ def get_analysis(force: bool = False) -> dict:
         print(f"\nCluster '{cluster_name}' — {len(cluster_pairs)} pair(s)")
         for doc_a, doc_b in cluster_pairs:
             pair = run_pair(doc_a, doc_b, client, force=force)
-            prefix = f"{doc_a['id'][:8]}-{doc_b['id'][:8]}"
+            prefix = f"{doc_a['id']}__{doc_b['id']}"
             for idx, c in enumerate(pair["conflicts"]):
                 c["id"] = f"{prefix}-{c.get('id', str(idx))}"
             all_conflicts.extend(pair["conflicts"])

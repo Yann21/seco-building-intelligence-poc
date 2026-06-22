@@ -88,7 +88,6 @@ const CLUSTER_ICONS = {
 }
 
 function ClusterSidebar({ docs, conflicts, selectedCluster, onSelect }) {
-  // Build cluster map: { clusterName: { docs: [], conflictCount: N } }
   const normId = id => id?.replace(/\s+/g, '-')
   const docById = Object.fromEntries(Object.values(docs).map(d => [normId(d.id), d]))
   const clusters = {}
@@ -104,29 +103,32 @@ function ClusterSidebar({ docs, conflicts, selectedCluster, onSelect }) {
   })
 
   const totalConflicts = conflicts.length
+  const visibleDocs = selectedCluster
+    ? (clusters[selectedCluster]?.docs ?? [])
+    : Object.values(docs)
 
   return (
     <div className="cluster-sidebar">
-      <div className="cluster-sidebar-label">Corpus réglementaire</div>
+      <div className="cluster-sidebar-top">
+        <div className="cluster-sidebar-label">Corpus réglementaire</div>
 
-      {/* All clusters row */}
-      <div
-        className={`cluster-row ${selectedCluster === null ? 'active' : ''}`}
-        onClick={() => onSelect(null)}
-      >
-        <span className="cluster-icon">🗂</span>
-        <span className="cluster-name">Tous les clusters</span>
-        <span className="cluster-count">{totalConflicts}</span>
-      </div>
+        <div
+          className={`cluster-row ${selectedCluster === null ? 'active' : ''}`}
+          onClick={() => onSelect(null)}
+        >
+          <span className="cluster-icon">🗂</span>
+          <span className="cluster-name">Tous les clusters</span>
+          <span className="cluster-count">{totalConflicts}</span>
+        </div>
 
-      <div className="cluster-divider" />
+        <div className="cluster-divider" />
 
-      {Object.entries(clusters).map(([name, { docs: clusterDocs, conflictIds }]) => {
-        const isSelected = selectedCluster === name
-        const icon = CLUSTER_ICONS[name] || CLUSTER_ICONS.default
-        return (
-          <div key={name}>
+        {Object.entries(clusters).map(([name, { conflictIds }]) => {
+          const isSelected = selectedCluster === name
+          const icon = CLUSTER_ICONS[name] || CLUSTER_ICONS.default
+          return (
             <div
+              key={name}
               className={`cluster-row ${isSelected ? 'active' : ''}`}
               onClick={() => onSelect(isSelected ? null : name)}
             >
@@ -134,21 +136,23 @@ function ClusterSidebar({ docs, conflicts, selectedCluster, onSelect }) {
               <span className="cluster-name">{name}</span>
               <span className="cluster-count">{conflictIds.size}</span>
             </div>
-            {isSelected && (
-              <div className="cluster-docs">
-                {clusterDocs.map(doc => (
-                  <div key={doc.id} className="doc-card">
-                    <div className="doc-card-id">{doc.id}</div>
-                    <div className="doc-card-title">{doc.title}</div>
-                    <div className="doc-card-meta">{doc.date}</div>
-                    <a href={doc.url} target="_blank" rel="noopener noreferrer">↗ Source</a>
-                  </div>
-                ))}
-              </div>
-            )}
+          )
+        })}
+      </div>
+
+      <div className="cluster-sidebar-docs">
+        <div className="cluster-sidebar-label" style={{ padding: '0 8px', marginBottom: 8 }}>
+          Documents ({visibleDocs.length})
+        </div>
+        {visibleDocs.map(doc => (
+          <div key={doc.id} className="doc-card">
+            <div className="doc-card-id">{doc.id}</div>
+            <div className="doc-card-title">{doc.title}</div>
+            <div className="doc-card-meta">{doc.date}</div>
+            <a href={doc.url} target="_blank" rel="noopener noreferrer">↗ Source</a>
           </div>
-        )
-      })}
+        ))}
+      </div>
     </div>
   )
 }
@@ -239,8 +243,8 @@ export default function App() {
           {data.summary && <div className="summary-banner">{data.summary}</div>}
           <div className="conflicts-panel">
             <div className="conflicts-grid">
-              {conflicts.map(conflict => (
-                <ConflictCard key={conflict.id} conflict={conflict} resolution={resolutions[conflict.id]} onResolve={handleResolve} />
+              {conflicts.map((conflict, i) => (
+                <ConflictCard key={`${conflict.id}__${i}`} conflict={conflict} resolution={resolutions[conflict.id]} onResolve={handleResolve} />
               ))}
             </div>
           </div>
