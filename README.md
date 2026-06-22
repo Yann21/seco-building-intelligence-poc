@@ -70,11 +70,11 @@ Every API call is wrapped in a 3-attempt retry loop (1 s → 2 s → 4 s) on `Ra
 
 The current production path sends document text to the Anthropic API. For a technical inspection firm this creates a confidentiality exposure: client project data, unpublished permit dossiers, or proprietary inspection reports would transit external servers. Three deployment tiers address this at increasing infrastructure cost:
 
-| Tier | Stack | Confidentiality | Cost per analysis | Quality |
-|---|---|---|---|---|
-| 1 · API | Claude claude-sonnet-4-6 (Anthropic) | Data leaves network | ~$0.35 | Best |
-| 2 · CPU local | Ollama + phi3.5 / llama3.2:3b | Fully air-gapped | $0.00 | Reduced |
-| 3 · GPU private | Mistral 7B on g4dn.xlarge / T4 | Private VPC | ~$0.01 on-demand | Good |
+| Tier | Stack | Confidentiality | Speed | Cost per analysis | Quality |
+|---|---|---|---|---|---|
+| 1 · API | Claude claude-sonnet-4-6 (Anthropic) | 🥉 Data leaves network | 🥇 ~5s / pair | 🥉 ~$0.35 | 🥇 Best |
+| 2 · CPU local | Ollama + phi3.5 / llama3.2:3b | 🥇 Fully air-gapped | 🥉 ~10 min / pair | 🥇 $0.00 | 🥉 Reduced |
+| 3 · GPU private | Mistral 7B on g4dn.xlarge / T4 | 🥇 Private VPC | 🥈 ~30s / pair | 🥈 ~$0.01 on-demand | 🥈 Good |
 
 Tier 2 (CPU) is the weakest option in practice. Benchmarking phi3.5 (3.8B) against the actual ITM documents shows it cannot reliably handle 32k-token French legal inputs: it found 2 conflicts across 3 pairs vs. 9 for Claude, hallucinated one conflict from an adjacent domain (egress geometry rather than lighting), and ran at ~1.7 tok/s — roughly 10 minutes per pair, or 30 minutes for a 3-document cluster. Acceptable only when confidentiality is the hard constraint and latency is not.
 
