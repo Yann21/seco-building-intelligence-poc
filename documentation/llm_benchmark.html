@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>SECO — LLM Benchmark &amp; Quality Audit</title>
+  <style>
+*,*::before,*::after{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:13px;line-height:1.55;color:#1a1a2e;background:#f5f5f7;margin:0;padding:0 0 48px}
+header{background:#1a1a2e;color:#e2e8f0;padding:24px 40px 20px;border-bottom:3px solid #6366f1}
+header h1{margin:0 0 4px;font-size:18px;font-weight:600;color:#fff}
+header p{margin:0;font-size:11px;color:#94a3b8}
+header code{background:#334155;padding:1px 5px;border-radius:3px;font-size:10px;color:#a5b4fc}
+.toolbar{background:#1e293b;padding:8px 40px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #334155}
+.toolbar span{color:#94a3b8;font-size:12px}
+.btn{background:#6366f1;color:#fff;border:none;padding:5px 14px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:500}
+.btn:hover{background:#4f46e5}
+main{max-width:1100px;margin:24px auto;padding:0 20px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.mc{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px}
+.ml{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:#64748b;margin-bottom:4px}
+.mv{font-size:20px;font-weight:700;color:#1e293b}
+.ms{font-size:11px;color:#94a3b8;margin-top:2px}
+section{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:20px 24px;margin-bottom:16px}
+h2{font-size:14px;font-weight:600;color:#1e293b;margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid #f1f5f9}
+h3{font-size:13px;font-weight:600;color:#1e293b;margin:0}
+.pair-header{margin-bottom:10px}
+.compare-header{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+.compare-col-head{font-size:11px;font-weight:600;color:#374151;padding:6px 10px;background:#f8fafc;border-radius:5px;border:1px solid #e2e8f0}
+.compare-col-head .meta{font-weight:400;color:#9ca3af;margin-left:6px}
+.compare-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+.compare-col{}
+.conflict-card{border-radius:6px;padding:12px 14px;border:1px solid #e2e8f0;border-left-width:3px}
+.conflict-card.empty{color:#9ca3af;font-style:italic;padding:20px;text-align:center;background:#f8fafc}
+.card-head{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}
+.sev{font-size:9px;font-weight:700;text-transform:uppercase;color:#fff;padding:2px 6px;border-radius:3px;white-space:nowrap;margin-top:2px}
+.card-desc{color:#374151;margin-bottom:6px;font-size:12px}
+.card-sources{margin-bottom:6px}
+.src{font-size:11px;color:#6b7280;margin-bottom:2px}
+.src code{font-size:10px;background:#f1f5f9;padding:1px 4px;border-radius:3px}
+.src em{color:#475569;font-style:normal}
+.card-rec{font-size:11px;color:#475569;border-top:1px solid #f1f5f9;padding-top:6px}
+.rating-row{display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:6px;border-top:1px solid #f1f5f9}
+.rate-btn{border:1px solid #e2e8f0;background:#f8fafc;color:#374151;padding:3px 9px;border-radius:4px;cursor:pointer;font-size:11px}
+.rate-btn:hover{background:#e2e8f0}
+.rating-label{font-size:11px;font-weight:600;margin-left:4px}
+.unv{color:#f59e0b;font-size:11px}
+.pair-section h3 code{font-size:12px;background:#f1f5f9;padding:1px 5px;border-radius:3px}
+.gpu-section{border-left:4px solid #6366f1}
+.gpu-desc{color:#4b5563;margin-bottom:12px;font-size:12px}
+.gpu-table{width:100%;border-collapse:collapse;font-size:12px}
+.gpu-table thead th{text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#64748b;padding:5px 8px;border-bottom:2px solid #e2e8f0}
+.gpu-table tbody tr:nth-child(odd){background:#f8fafc}
+.gpu-table td{padding:7px 8px;border-bottom:1px solid #f1f5f9}
+.gpu-note{margin-top:12px;padding:10px 12px;background:#eef2ff;border-left:3px solid #6366f1;border-radius:0 4px 4px 0;font-size:11px;color:#3730a3;line-height:1.7}
+code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#0f172a}
+</style>
+</head>
+<body>
+<header>
+  <h1>SECO — LLM Benchmark &amp; Quality Audit</h1>
+  <p>
+    Generated: 2026-06-22 09:25 UTC &nbsp;·&nbsp;
+    Tier 1: <code>claude-sonnet-4-6</code> &nbsp;·&nbsp;
+    Tier 2: <code>phi3.5 (not run)</code> &nbsp;·&nbsp;
+    Tier 3: <code>g4dn.xlarge / T4</code> (projections only)
+  </p>
+</header>
+<div class="toolbar">
+  <span>Expert ratings persist in localStorage · <span id="rating-count">0 ratings</span></span>
+  <button class="btn" onclick="exportRatings()">Export ratings JSON</button>
+</div>
+<main>
+  
+    <div class="metrics">
+      <div class="mc"><div class="ml">Tier 1 · Claude API</div><div class="mv">17 conflicts</div><div class="ms">$0.472 · 179s</div></div>
+      <div class="mc"><div class="ml">Tier 2 · phi3.5 (not run)</div><div class="mv">—</div><div class="ms">not run</div></div>
+      <div class="mc"><div class="ml">Tier 3 · T4 GPU (est.)</div><div class="mv">~91s / 3 pairs</div><div class="ms">$0.0132 on-demand · $0.0040 spot</div></div>
+      <div class="mc"><div class="ml">Document pairs</div><div class="mv">3</div><div class="ms">3 documents</div></div>
+    </div>
+  
+  <section class="pair-section">
+    <div class="pair-header">
+      <h3>Pair 1: <code>ITM-CL-55.2</code> × <code>ITM-ET-32.10</code></h3>
+    </div>
+    <div class="compare-header">
+      <div class="compare-col-head">Tier 1 — Claude claude-sonnet-4-6 <span class="meta">5 conflicts · 61.8s · $0.1840</span></div>
+      <div class="compare-col-head">Tier 2 — phi3.5 (not run) <span class="meta">not run</span></div>
+    </div>
+    
+      <div class="compare-row">
+        <div class="compare-col">
+<div class="conflict-card" id="C-0-0" style="border-left:3px solid #dc2626;background:#fee2e2">
+  <div class="card-head">
+    <span class="sev" style="background:#dc2626">critique</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Fréquence des essais et inspections de l'éclairage de secours</strong>
+  </div>
+  <div class="card-desc">Les deux documents fixent des fréquences différentes pour les essais et inspections périodiques de l'éclairage de secours. ITM-CL 55.2 impose des essais tous les 3 mois et des inspections tous les 6 mois, tandis qu'ITM-ET 32.10 impose des essais tous les 6 mois et des inspections tous les 12 mois. L…</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 14.3 <em>"Les éclairages de secours sont à essayer tous les trois mois et à inspecter régulièrement tous les six mois par du perso…"</em> → <strong>Essais : tous les 3 mois / Inspections : tous les 6 mois</strong></div><div class="src"><code>ITM-ET 32.10</code> Art. 15.8.3 <em>"Les éclairages de secours sont à essayer tous les six mois et à inspecter régulièrement tous les douze mois par du perso…"</em> → <strong>Essais : tous les 6 mois / Inspections : tous les 12 mois</strong></div></div>
+  <div class="card-rec"><em>Appliquer la fréquence la plus contraignante, soit celle d'ITM-CL 55.2 : essais tous les 3 mois et inspections tous les 6 mois par du personnel compétent. Le plan de maintenance doit être conçu sur ce…</em></div>
+  <div class="rating-row" data-id="C-0-0">
+    <button class="rate-btn" onclick="rate('C-0-0','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('C-0-0','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('C-0-0','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-C-0-0"></span>
+  </div>
+</div></div>
+        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-col">
+<div class="conflict-card" id="C-0-1" style="border-left:3px solid #d97706;background:#fef3c7">
+  <div class="card-head">
+    <span class="sev" style="background:#d97706">majeur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Lieux de travail à danger particulier : obligation d'un double éclairage de secours</strong>
+  </div>
+  <div class="card-desc">ITM-ET 32.10 prévoit explicitement, à l'article 15.7.7, que les lieux de travail à danger particulier doivent être équipés en plus d'un éclairage de secours standard (Art. 15.6), en sus de l'éclairage de secours spécifique à danger particulier. Cette exigence de double éclairage (Art. 15.6 + Art. 15…</div>
+  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 15.7.7 <em>"Les lieux de travail à danger particulier doivent être équipés en plus d'un éclairage de secours, tel que défini à l'art…"</em> → <strong>Double éclairage de secours obligatoire : spécifique (Art. 15.7) + standard (Art. 15.6)</strong></div><div class="src"><code>ITM-CL 55.2</code> Art. 11 <em>"L'éclairage de secours des lieux de travail à danger particulier doit être conforme aux stipulations des paragraphes 11.…"</em> → <strong>Aucune mention d'un cumul avec l'éclairage de secours standard de l'Art. 10</strong></div></div>
+  <div class="card-rec"><em>Appliquer l'exigence la plus contraignante d'ITM-ET 32.10 : les lieux de travail à danger particulier doivent être équipés à la fois de l'éclairage de secours spécifique (déclenchement ≤ 0,5 s, autono…</em></div>
+  <div class="rating-row" data-id="C-0-1">
+    <button class="rate-btn" onclick="rate('C-0-1','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('C-0-1','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('C-0-1','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-C-0-1"></span>
+  </div>
+</div></div>
+        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-col">
+<div class="conflict-card" id="C-0-2" style="border-left:3px solid #d97706;background:#fef3c7">
+  <div class="card-head">
+    <span class="sev" style="background:#d97706">majeur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Référence de la valeur En dans la formule d'intensité minimale pour lieux à danger particulier</strong>
+  </div>
+  <div class="card-desc">La formule E=0,1×En est identique dans les deux documents pour l'éclairage de secours des lieux à danger particulier, mais la définition de En diffère. Dans ITM-CL 55.2 (Art. 11.4), En est défini par renvoi à 'l'intensité lumineuse minimale telle que définie à l'article 9 ci-dessus' (éclairage de sé…</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 11.4 <em>"L'intensité minimale des lieux de travail à risque particulier doit être de: E=0,1xEn (où En est l'intensité lumineuse m…"</em> → <strong>En = intensité de l'éclairage de sécurité (Art. 9, soit 1/3 de l'éclairage normal)</strong></div><div class="src"><code>ITM-ET 32.10</code> Art. 15.7.4 <em>"L'intensité minimale des lieux de travail à risque particulier doit être de: E=0,1xEn (où En est l'intensité lumineuse m…"</em> → <strong>En = intensité lumineuse nominale des tableaux (Art. 15.4, valeur nominale du poste de travail)</strong></div></div>
+  <div class="card-rec"><em>Appliquer la définition d'ITM-ET 32.10 qui renvoie aux tableaux d'intensités nominales (Art. 15.4), car c'est la référence la plus claire et la plus directement applicable aux activités concernées. Ce…</em></div>
+  <div class="rating-row" data-id="C-0-2">
+    <button class="rate-btn" onclick="rate('C-0-2','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('C-0-2','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('C-0-2','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-C-0-2"></span>
+  </div>
+</div></div>
+        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-col">
+<div class="conflict-card" id="C-0-3" style="border-left:3px solid #16a34a;background:#f0fdf4">
+  <div class="card-head">
+    <span class="sev" style="background:#16a34a">mineur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Intitulé de la section 8.4.15 / 15.4.15 : 'Industrie horlogère' vs 'Horlogeries, bijouteries, opticiens'</strong>
+  </div>
+  <div class="card-desc">Les tableaux d'intensités nominales présentent la même section de travail avec des intitulés différents. ITM-CL 55.2 intitule la section 8.4.15 'Industrie horlogère' tandis qu'ITM-ET 32.10 intitule la même section 15.4.15 'Horlogeries, bijouteries, opticiens'. Les valeurs numériques sont identiques …</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.15 <em>"8.4.15. Industrie horlogère"</em> → <strong>Périmètre : industrie horlogère uniquement</strong></div><div class="src"><code>ITM-ET 32.10</code> Art. 15.4.15 <em>"15.4.15. Horlogeries, bijouteries, opticiens"</em> → <strong>Périmètre élargi : horlogeries, bijouteries, opticiens</strong></div></div>
+  <div class="card-rec"><em>Retenir l'intitulé le plus large d'ITM-ET 32.10 ('Horlogeries, bijouteries, opticiens') pour couvrir toutes les activités similaires. Les valeurs numériques étant identiques, il n'y a pas de conflit s…</em></div>
+  <div class="rating-row" data-id="C-0-3">
+    <button class="rate-btn" onclick="rate('C-0-3','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('C-0-3','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('C-0-3','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-C-0-3"></span>
+  </div>
+</div></div>
+        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-col">
+<div class="conflict-card" id="C-0-4" style="border-left:3px solid #16a34a;background:#f0fdf4">
+  <div class="card-head">
+    <span class="sev" style="background:#16a34a">mineur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Éclairage des locaux d'hygiène sanitaires : valeur minimale explicite dans un seul document</strong>
+  </div>
+  <div class="card-desc">ITM-ET 32.10 fixe à l'article 6.5.1 une intensité lumineuse minimale explicite de 100 Lux pour les locaux d'hygiène (vestiaires, douches, toilettes, lavabos). ITM-CL 55.2 mentionne bien 100 Lux pour ces locaux dans ses tableaux (Art. 8.4.5.3.3 à 8.4.5.3.5), mais sans article dédié à leur spécificité…</div>
+  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 6.5.1 <em>"Les locaux d'hygiène doivent être équipés d'un éclairage artificiel ayant une intensité lumineuse d'au moins 100 Lux."</em> → <strong>100 Lux minimum pour tous les locaux d'hygiène (obligation explicite)</strong></div><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.5.3.3 à 8.4.5.3.5 <em>"8.4.5.3.3. Vestiaires 100 / 8.4.5.3.4. Salles de lavabos, douches 100 / 8.4.5.3.5. Toilettes 100"</em> → <strong>100 Lux (dans les tableaux, sans article dédié)</strong></div></div>
+  <div class="card-rec"><em>Les deux documents convergent sur 100 Lux pour les locaux sanitaires. Appliquer cette valeur de 100 Lux comme minimum absolu pour tous les locaux d'hygiène, en s'appuyant sur l'article explicite 6.5.1…</em></div>
+  <div class="rating-row" data-id="C-0-4">
+    <button class="rate-btn" onclick="rate('C-0-4','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('C-0-4','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('C-0-4','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-C-0-4"></span>
+  </div>
+</div></div>
+        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+      </div>
+  </section>
+  <section class="pair-section">
+    <div class="pair-header">
+      <h3>Pair 2: <code>ITM-CL-55.2</code> × <code>ITM-CL-144.1</code></h3>
+    </div>
+    <div class="compare-header">
+      <div class="compare-col-head">Tier 1 — Claude claude-sonnet-4-6 <span class="meta">6 conflicts · 57.6s · $0.1137</span></div>
+      <div class="compare-col-head">Tier 2 — phi3.5 (not run) <span class="meta">not run</span></div>
+    </div>
+    
+      <div class="compare-row">
+        <div class="compare-col">
+<div class="conflict-card" id="C-1-0" style="border-left:3px solid #d97706;background:#fef3c7">
+  <div class="card-head">
+    <span class="sev" style="background:#d97706">majeur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement extérieur – voies de circulation</strong>
+  </div>
+  <div class="card-desc">Les deux documents fixent des valeurs d'éclairement minimales différentes pour les voies de circulation extérieures. ITM-CL 55.2 exige 20 lux (tableau 8.4.4.10) tandis qu'ITM-CL 144.1 n'exige que 10 lux pour les voies de circulation (véhicules et piétons) en chantier. Sur un chantier actif, les deux…</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.4.10 <em>"Voies de circulation extérieures : 20 [Lux]"</em> → <strong>20 lux</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.5 <em>"Voies de circulation (véhicules et piétons) : 10 lux"</em> → <strong>10 lux</strong></div></div>
+  <div class="card-rec"><em>Appliquer la valeur la plus contraignante, soit 20 lux (ITM-CL 55.2), sauf si l'ITM accorde expressément un allégement pour les chantiers temporaires. ITM-CL 144.1 est un texte spécifique aux chantier…</em></div>
+  <div class="rating-row" data-id="C-1-0">
+    <button class="rate-btn" onclick="rate('C-1-0','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('C-1-0','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('C-1-0','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-C-1-0"></span>
+  </div>
+</div></div>
+        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-col">
+<div class="conflict-card" id="C-1-1" style="border-left:3px solid #d97706;background:#fef3c7">
+  <div class="card-head">
+    <span class="sev" style="background:#d97706">majeur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement extérieur – activités de chantier de construction</strong>
+  </div>
+  <div class="card-desc">ITM-CL 55.2 fixe à 20 lux l'éclairage des chantiers de construction (tableau général), alors qu'ITM-CL 144.1 différencie plusieurs postes avec des valeurs allant de 10 lux (excavations) à 100 lux (machines dangereuses). La valeur générique de 20 lux d'ITM-CL 55.2 est insuffisante pour des postes spé…</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.4.7 <em>"Chantiers de construction : 20 [Lux]"</em> → <strong>20 lux (valeur unique)</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.5 <em>"Postes de coffrage et de bétonnage : 40 lux / Echafaudages, charpentes métallique : 40 lux / Postes de ferraillage : 50 …"</em> → <strong>10 à 100 lux selon zone</strong></div></div>
+  <div class="card-rec"><em>Appliquer ITM-CL 144.1 (Art. 7.5) qui est le texte spécifique aux chantiers et le plus récent : il détaille par zone et prévoit des valeurs supérieures à 20 lux pour les postes à risque. Pour toute zo…</em></div>
+  <div class="rating-row" data-id="C-1-1">
+    <button class="rate-btn" onclick="rate('C-1-1','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('C-1-1','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('C-1-1','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-C-1-1"></span>
+  </div>
+</div></div>
+        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-col">
+<div class="conflict-card" id="C-1-2" style="border-left:3px solid #dc2626;background:#fee2e2">
+  <div class="card-head">
+    <span class="sev" style="background:#dc2626">critique</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement intérieur – voies de circulation</strong>
+  </div>
+  <div class="card-desc">Pour les voies de circulation intérieures, ITM-CL 55.2 exige 50 lux (personnes seules) ou 100 lux (personnes et véhicules), et 100 lux pour les escaliers. ITM-CL 144.1 n'exige que 10 lux pour 'voies de circulation, couloirs, escaliers' en chantier. L'écart est considérable (facteur 5 à 10) et crée u…</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.6 <em>"Pour personnes seulement : 50 [Lux] / Pour personnes et véhicules : 100 [Lux] / Escaliers, escaliers et trottoirs roulan…"</em> → <strong>50 à 100 lux</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Voies de circulation, couloirs, escaliers : 10 lux"</em> → <strong>10 lux</strong></div></div>
+  <div class="card-rec"><em>La valeur de 10 lux d'ITM-CL 144.1 est manifestement insuffisante au regard des 50-100 lux d'ITM-CL 55.2. Appliquer a minima 50 lux pour les voies piétonnes intérieures et 100 lux pour les escaliers e…</em></div>
+  <div class="rating-row" data-id="C-1-2">
+    <button class="rate-btn" onclick="rate('C-1-2','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('C-1-2','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('C-1-2','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-C-1-2"></span>
+  </div>
+</div></div>
+        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-col">
+<div class="conflict-card" id="C-1-3" style="border-left:3px solid #d97706;background:#fef3c7">
+  <div class="card-head">
+    <span class="sev" style="background:#d97706">majeur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement intérieur – bureaux et salles de dessin de chantier</strong>
+  </div>
+  <div class="card-desc">Pour les bureaux, ITM-CL 55.2 exige 500 lux et 750 lux pour le dessin technique. ITM-CL 144.1 ne prévoit que 500 lux pour 'locaux annexes (salles de dessin, bureaux)', sans distinction. La valeur de 750 lux spécifique au dessin technique d'ITM-CL 55.2 est ignorée dans ITM-CL 144.1.</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.7 <em>"Bureaux : 500 [Lux] / Dessin technique : 750 [Lux]"</em> → <strong>500 lux (bureaux), 750 lux (dessin technique)</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Locaux annexes (salles de dessin, bureaux) : 500 lux"</em> → <strong>500 lux (sans distinction)</strong></div></div>
+  <div class="card-rec"><em>Appliquer 750 lux pour les salles de dessin technique de chantier conformément à ITM-CL 55.2 Art. 8.4.7.3, qui est plus précis et plus contraignant pour cette activité spécifique.</em></div>
+  <div class="rating-row" data-id="C-1-3">
+    <button class="rate-btn" onclick="rate('C-1-3','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('C-1-3','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('C-1-3','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-C-1-3"></span>
+  </div>
+</div></div>
+        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-col">
+<div class="conflict-card" id="C-1-4" style="border-left:3px solid #16a34a;background:#f0fdf4">
+  <div class="card-head">
+    <span class="sev" style="background:#16a34a">mineur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement intérieur – vestiaires et sanitaires</strong>
+  </div>
+  <div class="card-desc">ITM-CL 55.2 exige 100 lux pour les vestiaires, douches et toilettes. ITM-CL 144.1 exige 120 lux pour les vestiaires et sanitaires sur chantier. Il y a une légère divergence, ITM-CL 144.1 étant plus exigeant sur ce point.</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.5.3 <em>"Vestiaires : 100 [Lux] / Salles de lavabos, douches : 100 [Lux] / Toilettes : 100 [Lux]"</em> → <strong>100 lux</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Vestiaires, sanitaires : 120 lux"</em> → <strong>120 lux</strong></div></div>
+  <div class="card-rec"><em>Appliquer 120 lux conformément à ITM-CL 144.1, qui est plus récent et plus contraignant pour les installations de chantier. Cette valeur est cohérente avec l'objectif de meilleures conditions d'hygièn…</em></div>
+  <div class="rating-row" data-id="C-1-4">
+    <button class="rate-btn" onclick="rate('C-1-4','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('C-1-4','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('C-1-4','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-C-1-4"></span>
+  </div>
+</div></div>
+        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-col">
+<div class="conflict-card" id="C-1-5" style="border-left:3px solid #d97706;background:#fef3c7">
+  <div class="card-head">
+    <span class="sev" style="background:#d97706">majeur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement intérieur – entrepôts</strong>
+  </div>
+  <div class="card-desc">ITM-CL 55.2 distingue plusieurs catégories d'entrepôts avec des niveaux de 50 à 200 lux. ITM-CL 144.1 ne prévoit que 150 lux pour 'entrepôts, garages' sans distinction. Cette valeur unique de 150 lux est en contradiction avec la valeur de 50 lux pour zones de circulation en entrepôts et la valeur de…</div>
+  <div class="card-sources"><div class="src"><code>ITM-CL 55.2</code> Art. 8.4.5.1 <em>"Zones de circulation dans les entrepôts : 50 [Lux] / Entrepôts pour grandes pièces : 50 [Lux] / Entrepôts pour pièces de…"</em> → <strong>50 à 200 lux selon usage</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Entrepôts, garages : 150 lux"</em> → <strong>150 lux (valeur unique)</strong></div></div>
+  <div class="card-rec"><em>Appliquer une approche par zones : 150 lux comme minimum général (ITM-CL 144.1), monter à 200 lux pour les zones avec lecture de documents (ITM-CL 55.2 Art. 8.4.5.1.4). La valeur de 150 lux d'ITM-CL 1…</em></div>
+  <div class="rating-row" data-id="C-1-5">
+    <button class="rate-btn" onclick="rate('C-1-5','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('C-1-5','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('C-1-5','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-C-1-5"></span>
+  </div>
+</div></div>
+        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+      </div>
+  </section>
+  <section class="pair-section">
+    <div class="pair-header">
+      <h3>Pair 3: <code>ITM-ET-32.10</code> × <code>ITM-CL-144.1</code></h3>
+    </div>
+    <div class="compare-header">
+      <div class="compare-col-head">Tier 1 — Claude claude-sonnet-4-6 <span class="meta">6 conflicts · 59.7s · $0.1738</span></div>
+      <div class="compare-col-head">Tier 2 — phi3.5 (not run) <span class="meta">not run</span></div>
+    </div>
+    
+      <div class="compare-row">
+        <div class="compare-col">
+<div class="conflict-card" id="C-2-0" style="border-left:3px solid #dc2626;background:#fee2e2">
+  <div class="card-head">
+    <span class="sev" style="background:#dc2626">critique</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement des voies de circulation intérieures : 50 lux vs 10 lux</strong>
+  </div>
+  <div class="card-desc">Pour les voies de circulation intérieures (piétons uniquement), l'ITM-ET 32.10 fixe un minimum de 50 lux, tandis que l'ITM-CL 144.1 n'exige que 10 lux pour les voies de circulation, couloirs et escaliers intérieurs de chantier. Cette divergence d'un facteur 5 peut conduire à des choix d'équipements …</div>
+  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 15.4.6.1 <em>"Pour personnes seulement 50"</em> → <strong>50 lux (voies de circulation intérieures, piétons)</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Voies de circulation, couloirs, escaliers : 10 lux"</em> → <strong>10 lux (voies de circulation intérieures de chantier)</strong></div></div>
+  <div class="card-rec"><em>Appliquer la valeur la plus contraignante de 50 lux pour toutes les voies de circulation intérieures, y compris sur chantier, dès lors que des travailleurs y circulent de façon régulière. La valeur de…</em></div>
+  <div class="rating-row" data-id="C-2-0">
+    <button class="rate-btn" onclick="rate('C-2-0','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('C-2-0','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('C-2-0','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-C-2-0"></span>
+  </div>
+</div></div>
+        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-col">
+<div class="conflict-card" id="C-2-1" style="border-left:3px solid #dc2626;background:#fee2e2">
+  <div class="card-head">
+    <span class="sev" style="background:#dc2626">critique</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement des voies de circulation intérieures mixtes (piétons + véhicules) : 100 lux vs 10 lux</strong>
+  </div>
+  <div class="card-desc">L'ITM-ET 32.10 exige 100 lux pour les voies de circulation intérieures empruntées à la fois par des piétons et des véhicules. L'ITM-CL 144.1 ne prévoit que 10 lux pour l'ensemble des voies de circulation intérieures sans distinguer la nature des usagers. Sur un chantier, les engins et les piétons co…</div>
+  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 15.4.6.2 <em>"Pour personnes et véhicules 100"</em> → <strong>100 lux (voies mixtes intérieures)</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Voies de circulation, couloirs, escaliers : 10 lux"</em> → <strong>10 lux (sans distinction du type d'usager)</strong></div></div>
+  <div class="card-rec"><em>Appliquer 100 lux pour toutes les voies de circulation intérieures où des véhicules et des piétons coexistent, conformément à l'ITM-ET 32.10, qui représente l'exigence la plus contraignante et corresp…</em></div>
+  <div class="rating-row" data-id="C-2-1">
+    <button class="rate-btn" onclick="rate('C-2-1','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('C-2-1','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('C-2-1','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-C-2-1"></span>
+  </div>
+</div></div>
+        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-col">
+<div class="conflict-card" id="C-2-2" style="border-left:3px solid #d97706;background:#fef3c7">
+  <div class="card-head">
+    <span class="sev" style="background:#d97706">majeur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement des escaliers intérieurs : 100 lux vs 10 lux</strong>
+  </div>
+  <div class="card-desc">L'ITM-ET 32.10 prévoit 100 lux pour les escaliers intérieurs, les escaliers roulants et les pentes. L'ITM-CL 144.1 regroupe les escaliers avec les voies de circulation et couloirs à 10 lux seulement. Les escaliers de chantier, souvent provisoires et non protégés, présentent un risque de chute élevé …</div>
+  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 15.4.6.3 <em>"Escaliers, escaliers et trottoirs roulants, pentes 100"</em> → <strong>100 lux</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Voies de circulation, couloirs, escaliers : 10 lux"</em> → <strong>10 lux</strong></div></div>
+  <div class="card-rec"><em>Appliquer 100 lux sur tous les escaliers intérieurs de chantier, conformément à l'ITM-ET 32.10. L'escalier est une zone à risque élevé de chute qui ne peut pas être traitée au même niveau d'exigence q…</em></div>
+  <div class="rating-row" data-id="C-2-2">
+    <button class="rate-btn" onclick="rate('C-2-2','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('C-2-2','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('C-2-2','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-C-2-2"></span>
+  </div>
+</div></div>
+        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-col">
+<div class="conflict-card" id="C-2-3" style="border-left:3px solid #16a34a;background:#f0fdf4">
+  <div class="card-head">
+    <span class="sev" style="background:#16a34a">mineur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement des vestiaires et sanitaires : 100 lux vs 120 lux</strong>
+  </div>
+  <div class="card-desc">L'ITM-ET 32.10 fixe à 100 lux le niveau minimal pour les vestiaires, les salles de lavabos et douches, et les toilettes. L'ITM-CL 144.1 exige 120 lux pour les vestiaires et sanitaires de chantier. Bien que la différence soit faible (20 lux), les deux documents imposent des valeurs différentes pour d…</div>
+  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 15.4.5.3.3 / 15.4.5.3.4 / 15.4.5.3.5 <em>"Vestiaires 100 / Salles de lavabos, douches 100 / Toilettes 100"</em> → <strong>100 lux</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Vestiaires, sanitaires : 120 lux"</em> → <strong>120 lux</strong></div></div>
+  <div class="card-rec"><em>Appliquer la valeur la plus contraignante de 120 lux pour les vestiaires et sanitaires de chantier, conformément à l'ITM-CL 144.1 qui est le document spécifique au contexte du chantier et plus récent …</em></div>
+  <div class="rating-row" data-id="C-2-3">
+    <button class="rate-btn" onclick="rate('C-2-3','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('C-2-3','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('C-2-3','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-C-2-3"></span>
+  </div>
+</div></div>
+        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-col">
+<div class="conflict-card" id="C-2-4" style="border-left:3px solid #16a34a;background:#f0fdf4">
+  <div class="card-head">
+    <span class="sev" style="background:#16a34a">mineur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement des bureaux et salles de dessin : 500 lux vs 500 lux (cohérence apparente mais périmètre différent)</strong>
+  </div>
+  <div class="card-desc">Les deux documents fixent 500 lux pour les bureaux (ITM-ET 32.10, Art. 15.4.7.1) et les 'locaux annexes (salles de dessin, bureaux)' (ITM-CL 144.1, Art. 7.9). Cependant, l'ITM-ET 32.10 distingue ensuite des sous-catégories de bureaux (grands bureaux à réflexion moyenne : 1000 lux, grands bureaux à h…</div>
+  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 15.4.7.3 <em>"Dessin technique 750"</em> → <strong>750 lux pour le dessin technique</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.9 <em>"Locaux annexes (salles de dessin, bureaux) : 500 lux"</em> → <strong>500 lux pour salles de dessin et bureaux</strong></div></div>
+  <div class="card-rec"><em>Pour les salles de dessin technique sur chantier (plans, relevés, BIM sur écran), appliquer 750 lux conformément à l'ITM-ET 32.10 Art. 15.4.7.3, qui est plus spécifique et plus contraignant que la cat…</em></div>
+  <div class="rating-row" data-id="C-2-4">
+    <button class="rate-btn" onclick="rate('C-2-4','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('C-2-4','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('C-2-4','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-C-2-4"></span>
+  </div>
+</div></div>
+        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-col">
+<div class="conflict-card" id="C-2-5" style="border-left:3px solid #16a34a;background:#f0fdf4">
+  <div class="card-head">
+    <span class="sev" style="background:#16a34a">mineur</span>
+    <span class="unv" title="Citation non retrouvée dans la source">⚠</span> <strong>Niveau d'éclairement des quais de chargement intérieurs : 100 lux vs non spécifié dans ITM-CL 144.1</strong>
+  </div>
+  <div class="card-desc">L'ITM-ET 32.10 prévoit explicitement 100 lux pour les quais de chargement intérieurs (Art. 15.4.6.4). L'ITM-CL 144.1 mentionne les 'aires de chargement et de déchargement' uniquement pour l'extérieur (20 lux, Art. 7.5), sans prévoir de valeur pour les zones de chargement/déchargement intérieures d'u…</div>
+  <div class="card-sources"><div class="src"><code>ITM-ET 32.10</code> Art. 15.4.6.4 <em>"Quais de chargement 100"</em> → <strong>100 lux (intérieur)</strong></div><div class="src"><code>ITM-CL 144.1</code> Art. 7.5 <em>"Aires de chargement et de déchargement : 20 lux"</em> → <strong>20 lux (extérieur uniquement, lacune pour l'intérieur)</strong></div></div>
+  <div class="card-rec"><em>Pour les zones de chargement/déchargement intérieures sur chantier, appliquer 100 lux conformément à l'ITM-ET 32.10 Art. 15.4.6.4, par analogie et par principe de précaution. L'ITM-CL 144.1 Art. 7.9 i…</em></div>
+  <div class="rating-row" data-id="C-2-5">
+    <button class="rate-btn" onclick="rate('C-2-5','valid')" title="Valid finding">✓ Valid</button>
+    <button class="rate-btn" onclick="rate('C-2-5','hallucinated')" title="Hallucinated / incorrect">✗ Halluc.</button>
+    <button class="rate-btn" onclick="rate('C-2-5','uncertain')" title="Uncertain">? Unsure</button>
+    <span class="rating-label" id="rl-C-2-5"></span>
+  </div>
+</div></div>
+        <div class="compare-col"><div class="conflict-card empty">—</div></div>
+      </div>
+  </section>
+  
+  <section class="gpu-section">
+    <h2>Tier 3 — GPU Cloud Inference (g4dn.xlarge · NVIDIA T4 16GB VRAM)</h2>
+    <p class="gpu-desc">
+      Reference infrastructure: AWS <code>g4dn.xlarge</code>, Frankfurt (eu-central-1), configured in
+      <code>interpolate/aws/spin-up.sh</code>. Model: <strong>Mistral 7B Q4_K_M</strong>
+      (4.1 GB VRAM, leaves ~12 GB headroom on the T4).
+    </p>
+    <table class="gpu-table">
+      <thead><tr><th>Metric</th><th>Value</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Generation throughput</td><td>~180 tok/sec</td><td>Mistral 7B Q4_K_M on T4, memory-bandwidth bound</td></tr>
+        <tr><td>Inference per pair</td><td>~30s</td><td>Prefill 10s + generate 22s</td></tr>
+        <tr><td>Full analysis (3 pairs)</td><td>~91s</td><td>Sequential; parallelisable across pairs</td></tr>
+        <tr><td>Cost on-demand</td><td>$0.0132</td><td>$0.526/hr × 91s</td></tr>
+        <tr><td>Cost spot instance</td><td>$0.0040</td><td>$0.158/hr · ~70% discount, interruptible</td></tr>
+        <tr><td>LoRA fine-tuning (100 examples)</td><td>~0.75h · $0.39</td><td>One-time domain adaptation; optional</td></tr>
+        <tr><td>vs. Claude API per analysis</td><td>$0.472</td><td>GPU is 36× cheaper per run once instance is running</td></tr>
+      </tbody>
+    </table>
+    <div class="gpu-note">
+      <strong>When GPU is worth it:</strong> the instance startup overhead (~2 min) dominates for low-frequency use.
+      Break-even shifts if the instance is kept warm for batch ingestion or if confidentiality mandates on-premises deployment
+      regardless of cost. At ~10+ analyses/day a persistent spot instance (~$3.80/day) is cheaper than the API.
+    </div>
+  </section>
+</main>
+<script>
+function rate(id, verdict) {
+  const store = JSON.parse(localStorage.getItem('seco_ratings') || '{}');
+  store[id] = { verdict, ts: new Date().toISOString() };
+  localStorage.setItem('seco_ratings', JSON.stringify(store));
+
+  const colors = { valid: '#d1fae5', hallucinated: '#fee2e2', uncertain: '#fef3c7' };
+  const labels = { valid: '✓ valid', hallucinated: '✗ hallucinated', uncertain: '? uncertain' };
+  const card = document.getElementById(id);
+  if (card) card.style.boxShadow = `0 0 0 2px ${colors[verdict].replace('5', '9')}`;
+  const lbl = document.getElementById('rl-' + id);
+  if (lbl) { lbl.textContent = labels[verdict]; lbl.style.color = { valid:'#065f46', hallucinated:'#7f1d1d', uncertain:'#78350f' }[verdict]; }
+
+  const total = Object.keys(store).length;
+  const el = document.getElementById('rating-count');
+  if (el) el.textContent = total + ' rating' + (total !== 1 ? 's' : '');
+}
+
+function exportRatings() {
+  const store = localStorage.getItem('seco_ratings') || '{}';
+  const blob = new Blob([JSON.stringify(JSON.parse(store), null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'seco_expert_ratings_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+// Restore ratings from localStorage on load
+window.addEventListener('DOMContentLoaded', () => {
+  const store = JSON.parse(localStorage.getItem('seco_ratings') || '{}');
+  const labels = { valid: '✓ valid', hallucinated: '✗ hallucinated', uncertain: '? uncertain' };
+  const colors = { valid: '#065f46', hallucinated: '#7f1d1d', uncertain: '#78350f' };
+  const ringColors = { valid: '#6ee7b7', hallucinated: '#fca5a5', uncertain: '#fcd34d' };
+  for (const [id, {verdict}] of Object.entries(store)) {
+    const card = document.getElementById(id);
+    if (card) card.style.boxShadow = `0 0 0 2px ${ringColors[verdict]}`;
+    const lbl = document.getElementById('rl-' + id);
+    if (lbl) { lbl.textContent = labels[verdict]; lbl.style.color = colors[verdict]; }
+  }
+  const total = Object.keys(store).length;
+  const el = document.getElementById('rating-count');
+  if (el) el.textContent = total + ' rating' + (total !== 1 ? 's' : '');
+});
+</script>
+</body>
+</html>
