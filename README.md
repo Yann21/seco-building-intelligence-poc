@@ -62,6 +62,20 @@ Every API call is wrapped in a 3-attempt retry loop (1 s → 2 s → 4 s) on `Ra
 **4. Prompt versioning**
 `PROMPT_VERSION` is embedded in the cache key. Bumping it (e.g. `v2 → v3`) automatically invalidates all pair caches on the next run without requiring a manual cache flush.
 
+### Data confidentiality and LLM deployment tiers
+
+The current production path sends document text to the Anthropic API. For a technical inspection firm this creates a confidentiality exposure: client project data, unpublished permit dossiers, or proprietary inspection reports would transit external servers. Three deployment tiers address this at increasing infrastructure cost:
+
+| Tier | Stack | Confidentiality | Cost per analysis | Quality |
+|---|---|---|---|---|
+| 1 · API | Claude claude-sonnet-4-6 (Anthropic) | Data leaves network | ~$0.35 | Best |
+| 2 · CPU local | Ollama + phi3.5 / llama3.2:3b | Fully air-gapped | $0.00 | Reduced |
+| 3 · GPU private | Mistral 7B on g4dn.xlarge / T4 | Private VPC | ~$0.01 on-demand | Good |
+
+Tier 2 (CPU) is viable for a confidentiality-first deployment: a quantized 3.8B model runs on any developer machine, data never leaves the process, and the pairwise cache means inference only runs on new document pairs. Quality degrades on complex legal French — the benchmark document (`documentation/llm_benchmark.html`) provides a human-auditable side-by-side comparison for experts to validate.
+
+Tier 3 is the right balance for an internal SECO deployment: a private GPU instance (or on-premises RTX-class workstation) delivers near-API quality at ~40× lower marginal cost, with no external data transfer. See `documentation/costing.html` for the full breakdown including g4dn.xlarge spin-up cost projections.
+
 ### API dependency and cost model
 
 Token counts are measured with the Anthropic `count_tokens` API (non-billable) and costs extrapolated across corpus sizes. See [`documentation/costing.html`](documentation/costing.html) for the full breakdown — per-document token counts, pair-by-pair cost table, and extrapolation to 100-document indices.
