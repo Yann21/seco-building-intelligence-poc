@@ -96,6 +96,77 @@ def avg_doc_tokens_from_pairs(pair_stats: list[dict], prompt_overhead: int) -> i
 
 # ── HTML generation ────────────────────────────────────────────────────────────
 
+def gpu_section(pair_stats: list[dict], total_api_cost: float) -> str:
+    """
+    GPU cost projections for g4dn.xlarge (NVIDIA T4 16 GB VRAM, Frankfurt eu-central-1).
+    Source: interpolate/aws/spin-up.sh — same instance used for Stable Diffusion work.
+    """
+    on_demand   = 0.526   # $/hr, eu-central-1 on-demand
+    spot        = 0.158   # $/hr, ~70% discount
+    gen_tps     = 180     # tok/sec, Mistral 7B Q4_K_M generation on T4
+    prefill_tps = 4000    # tok/sec, prefill is memory-bandwidth bound
+
+    n_pairs = len(pair_stats)
+    avg_input = sum(p["input_tokens"] for p in pair_stats) / n_pairs if n_pairs else 32000
+    output_est = OUTPUT_TOKENS_PER_PAIR_EST
+
+    prefill_s   = avg_input  / prefill_tps
+    gen_s       = output_est / gen_tps
+    per_pair_s  = prefill_s + gen_s
+    total_s     = per_pair_s * n_pairs
+
+    cost_od   = total_s / 3600 * on_demand
+    cost_spot = total_s / 3600 * spot
+
+    lora_h    = 0.75   # LoRA fine-tune on T4, ~100 examples
+    lora_cost = lora_h * on_demand
+
+    speedup = total_api_cost / cost_od if cost_od > 0 else 0
+
+    rows = [
+        ("Instance",                "g4dn.xlarge",                  "AWS Frankfurt (eu-central-1) — same config as interpolate/aws/spin-up.sh"),
+        ("GPU",                     "NVIDIA T4 · 16 GB VRAM",       "8.1 TFLOPS FP32 · 320 GB/s memory bandwidth"),
+        ("Model",                   "Mistral 7B Q4_K_M",            "4.1 GB VRAM · leaves 12 GB headroom · near-FP16 quality"),
+        ("Generation throughput",   "~180 tok/sec",                  "T4 memory-bandwidth bound at Q4 quant"),
+        ("Prefill (input)",         f"~{avg_input/prefill_tps:.1f}s / pair",  f"{avg_input:,.0f} tok avg input ÷ {prefill_tps:,} tok/s"),
+        ("Generation (output)",     f"~{gen_s:.1f}s / pair",        f"{output_est:,} tok output ÷ {gen_tps} tok/s"),
+        ("Total inference time",    f"~{total_s:.0f}s ({n_pairs} pairs)",  f"{per_pair_s:.1f}s/pair · sequential; trivially parallelisable"),
+        ("Cost · on-demand",        f"${cost_od:.4f}",              f"${on_demand}/hr × {total_s:.0f}s"),
+        ("Cost · spot instance",    f"${cost_spot:.4f}",            f"${spot}/hr · ~70% discount · interruptible"),
+        ("vs. Claude API",          f"{speedup:.0f}× cheaper / run", f"API ${total_api_cost:.4f} → GPU ${cost_od:.4f} once instance is running"),
+        ("LoRA fine-tune (optional)", f"~{lora_h}h · ${lora_cost:.2f}",  "100-example domain adaptation on T4 · one-time cost"),
+    ]
+
+    rows_html = "\n".join(
+        f'<tr><td>{r}</td><td class="num">{v}</td><td style="color:#64748b;font-size:12px">{n}</td></tr>'
+        for r, v, n in rows
+    )
+
+    breakeven_analyses = int((on_demand * 8) / (total_api_cost - cost_od * 8)) if total_api_cost > cost_od * 8 else 0
+
+    return f"""
+  <section class="gpu-section">
+    <h2>4 · GPU Inference — g4dn.xlarge / NVIDIA T4</h2>
+    <p style="font-size:12px;color:#4b5563;margin:0 0 14px">
+      <span class="tier-api">Tier 1</span> Claude API — pay per token, data leaves network &nbsp;·&nbsp;
+      <span class="tier-gpu">Tier 3</span> GPU private — near-API quality, data stays in VPC
+    </p>
+    <table class="gpu-table">
+      <thead><tr><th>Metric</th><th>Value</th><th>Notes</th></tr></thead>
+      <tbody>{rows_html}</tbody>
+    </table>
+    <div class="gpu-note">
+      <strong>When GPU pays off:</strong>
+      the instance startup overhead (~2 min) dominates for occasional use.
+      At ~10 full analyses/day a persistent spot instance costs ~$3.80/day vs ~$4.70/day on the API —
+      break-even is low, but the primary driver for GPU is <strong>confidentiality</strong>
+      (no document text transits external servers), not cost.<br><br>
+      <strong>Spin-up command:</strong> <code>bash interpolate/aws/spin-up.sh</code>
+      (auto-terminates after 4 h, costs max ${on_demand * 4:.2f} on-demand).
+    </div>
+  </section>"""
+
+
 def generate_html(
     doc_list: list[dict],
     prompt_overhead: int,
@@ -107,6 +178,7 @@ def generate_html(
     total_input = sum(p["input_tokens"] for p in pair_stats)
     total_output_est = OUTPUT_TOKENS_PER_PAIR_EST * len(pair_stats)
     total_cost = sum(p["cost_usd"] for p in pair_stats)
+    gpu_html = gpu_section(pair_stats, total_cost)
 
     # ── Document rows ──
     doc_rows_html = ""
@@ -256,6 +328,13 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:12px;color:#
 .control-note{display:block;font-size:11px;color:#94a3b8;margin-top:4px}
 .custom-row{background:#fffbeb !important}
 #cpp-note{font-size:11px;color:#64748b;font-style:italic;margin-top:10px;display:block}
+.gpu-section{border-left:4px solid #6366f1}
+.gpu-section h2{color:#3730a3}
+.gpu-table td:first-child{font-weight:500;color:#1e293b;width:220px}
+.gpu-note{margin-top:14px;padding:12px 14px;background:#eef2ff;border-left:3px solid #6366f1;border-radius:0 4px 4px 0;font-size:12px;color:#3730a3;line-height:1.7}
+.tier-pill{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-right:4px}
+.tier-api{background:#dbeafe;color:#1e40af}
+.tier-gpu{background:#ede9fe;color:#5b21b6}
 """
 
     return f"""<!DOCTYPE html>
@@ -370,6 +449,8 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:12px;color:#
       <strong>1 addition</strong> = marginal cost of adding one document to an existing cluster (all other pairs cached).
     </div>
   </section>
+
+  {gpu_html}
 
 </main>
 <script>{js}</script>

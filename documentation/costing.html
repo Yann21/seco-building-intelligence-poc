@@ -40,13 +40,20 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:12px;color:#
 .control-note{display:block;font-size:11px;color:#94a3b8;margin-top:4px}
 .custom-row{background:#fffbeb !important}
 #cpp-note{font-size:11px;color:#64748b;font-style:italic;margin-top:10px;display:block}
+.gpu-section{border-left:4px solid #6366f1}
+.gpu-section h2{color:#3730a3}
+.gpu-table td:first-child{font-weight:500;color:#1e293b;width:220px}
+.gpu-note{margin-top:14px;padding:12px 14px;background:#eef2ff;border-left:3px solid #6366f1;border-radius:0 4px 4px 0;font-size:12px;color:#3730a3;line-height:1.7}
+.tier-pill{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-right:4px}
+.tier-api{background:#dbeafe;color:#1e40af}
+.tier-gpu{background:#ede9fe;color:#5b21b6}
 </style>
 </head>
 <body>
 <header>
   <h1>SECO — API Costing Report</h1>
   <p>
-    Generated: 2026-06-22 09:41 UTC &nbsp;·&nbsp;
+    Generated: 2026-06-22 09:52 UTC &nbsp;·&nbsp;
     Model: <code>claude-sonnet-4-6</code> &nbsp;·&nbsp;
     Input: <code>$3 / MTok</code> &nbsp;·&nbsp;
     Output: <code>$15 / MTok</code>
@@ -201,6 +208,38 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:12px;color:#
       This bounds ingestion cost at O(C), not O(N).<br><br>
       <strong>Full build</strong> = cost to analyze a fresh corpus from scratch.
       <strong>1 addition</strong> = marginal cost of adding one document to an existing cluster (all other pairs cached).
+    </div>
+  </section>
+
+  
+  <section class="gpu-section">
+    <h2>4 · GPU Inference — g4dn.xlarge / NVIDIA T4</h2>
+    <p style="font-size:12px;color:#4b5563;margin:0 0 14px">
+      <span class="tier-api">Tier 1</span> Claude API — pay per token, data leaves network &nbsp;·&nbsp;
+      <span class="tier-gpu">Tier 3</span> GPU private — near-API quality, data stays in VPC
+    </p>
+    <table class="gpu-table">
+      <thead><tr><th>Metric</th><th>Value</th><th>Notes</th></tr></thead>
+      <tbody><tr><td>Instance</td><td class="num">g4dn.xlarge</td><td style="color:#64748b;font-size:12px">AWS Frankfurt (eu-central-1) — same config as interpolate/aws/spin-up.sh</td></tr>
+<tr><td>GPU</td><td class="num">NVIDIA T4 · 16 GB VRAM</td><td style="color:#64748b;font-size:12px">8.1 TFLOPS FP32 · 320 GB/s memory bandwidth</td></tr>
+<tr><td>Model</td><td class="num">Mistral 7B Q4_K_M</td><td style="color:#64748b;font-size:12px">4.1 GB VRAM · leaves 12 GB headroom · near-FP16 quality</td></tr>
+<tr><td>Generation throughput</td><td class="num">~180 tok/sec</td><td style="color:#64748b;font-size:12px">T4 memory-bandwidth bound at Q4 quant</td></tr>
+<tr><td>Prefill (input)</td><td class="num">~8.1s / pair</td><td style="color:#64748b;font-size:12px">32,399 tok avg input ÷ 4,000 tok/s</td></tr>
+<tr><td>Generation (output)</td><td class="num">~22.2s / pair</td><td style="color:#64748b;font-size:12px">4,000 tok output ÷ 180 tok/s</td></tr>
+<tr><td>Total inference time</td><td class="num">~91s (3 pairs)</td><td style="color:#64748b;font-size:12px">30.3s/pair · sequential; trivially parallelisable</td></tr>
+<tr><td>Cost · on-demand</td><td class="num">$0.0133</td><td style="color:#64748b;font-size:12px">$0.526/hr × 91s</td></tr>
+<tr><td>Cost · spot instance</td><td class="num">$0.0040</td><td style="color:#64748b;font-size:12px">$0.158/hr · ~70% discount · interruptible</td></tr>
+<tr><td>vs. Claude API</td><td class="num">35× cheaper / run</td><td style="color:#64748b;font-size:12px">API $0.4716 → GPU $0.0133 once instance is running</td></tr>
+<tr><td>LoRA fine-tune (optional)</td><td class="num">~0.75h · $0.39</td><td style="color:#64748b;font-size:12px">100-example domain adaptation on T4 · one-time cost</td></tr></tbody>
+    </table>
+    <div class="gpu-note">
+      <strong>When GPU pays off:</strong>
+      the instance startup overhead (~2 min) dominates for occasional use.
+      At ~10 full analyses/day a persistent spot instance costs ~$3.80/day vs ~$4.70/day on the API —
+      break-even is low, but the primary driver for GPU is <strong>confidentiality</strong>
+      (no document text transits external servers), not cost.<br><br>
+      <strong>Spin-up command:</strong> <code>bash interpolate/aws/spin-up.sh</code>
+      (auto-terminates after 4 h, costs max $2.10 on-demand).
     </div>
   </section>
 
