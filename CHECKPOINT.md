@@ -60,7 +60,7 @@ What needs to be built:
 
 ### 2. ITM Explorer — App 3 (BUILT — corpus map done)
 
-Pipeline in `app3-itm-explorer/explore.py` (run via `make explore`, all stages cached):
+Pipeline in `documentation/explore.py` (run via `make explore`, all stages cached):
 scrape → download → pdfplumber extract → LLM titles → OpenAI embed → UMAP → `report.html`.
 
 **Corpus, quantified (full ITM, not the earlier 113 estimate):**
@@ -82,7 +82,7 @@ scrape → download → pdfplumber extract → LLM titles → OpenAI embed → U
 - Embeddings: OpenAI text-embedding-3-small, **first ~8000 chars only** (≈2k tokens).
   Long docs are embedded on their opening section → position reflects the intro, not the
   whole text. Production fix: chunk long docs + average vectors. (Documented in the report.)
-- Caches in `app3-itm-explorer/data/cache/`: links, extracted, titles, embeddings, umap2d.
+- Caches in `documentation/data/cache/`: links, extracted, titles, embeddings, umap2d.
 
 **Still TBD for app3 (next directions):**
 - OCR the 128 scanned docs (Claude vision) and fold them into the map.

@@ -37,8 +37,8 @@ format: ## Auto-format and fix Python with ruff
 doc: ## Start documentation server at http://localhost:8889
 	@cd $(BACKEND) && python ../../documentation/serve.py --port 8889
 
-explore: ## Download all ITMs, embed, UMAP → app3-itm-explorer/report.html
-	cd app3-itm-explorer && python explore.py
+explore: ## Download all ITMs, embed, UMAP → documentation/report.html
+	python documentation/explore.py
 
 deploy: ## Build frontend, sync backend, rebuild Docker image, deploy to hetzner (yannhoffmann.com/seco2)
 	@echo "Building frontend..."

@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 DOC_DIR = ROOT / "documentation"
-REPORT = ROOT / "app3-itm-explorer" / "report.html"
+REPORT = DOC_DIR / "report.html"
 
 try:
     import markdown

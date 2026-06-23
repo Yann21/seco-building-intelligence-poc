@@ -18,9 +18,9 @@ dist/
 archive/app1-zone-map/data/raw/
 archive/app1-zone-map/data/processed/
 
-# App3 ITM explorer: 454 raw PDFs (~320 MB) + pipeline caches, all
-# reproducible via `make explore`. report.html (the deliverable) is committed.
-app3-itm-explorer/data/
+# ITM explorer (documentation/explore.py): 454 raw PDFs (~320 MB) + pipeline
+# caches, all reproducible via `make explore`. report.html stays committed.
+documentation/data/
 
 # App2 generated artifacts: extraction, pair caches, merged analysis, usage
 # ledger, resolutions. All reproducible via `make analyze`.
