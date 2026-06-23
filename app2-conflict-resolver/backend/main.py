@@ -12,8 +12,9 @@ from pydantic import BaseModel
 
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
-sys.path.insert(0, str(Path(__file__).parent))
-from analyze import get_analysis, read_usage_log
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from pipeline import get_analysis, read_usage_log
+from pipeline.config import DATA_DIR
 
 _analysis: dict | None = None
 
@@ -65,7 +66,7 @@ class ResolutionPayload(BaseModel):
     resolved_by: str = "Expert"
 
 
-RESOLUTIONS_PATH = Path(os.environ.get("RESOLUTIONS_PATH", Path(__file__).parent / "resolutions.json"))
+RESOLUTIONS_PATH = Path(os.environ.get("RESOLUTIONS_PATH", DATA_DIR / "resolutions.json"))
 
 
 def load_resolutions() -> dict:

@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: app2 doc deploy deploy-doc help
+.PHONY: app2 analyze eval doc explore deploy deploy-doc help
 
 BACKEND  = app2-conflict-resolver/backend
 FRONTEND = app2-conflict-resolver/frontend
@@ -16,6 +16,12 @@ app2: ## Run app2 backend (uvicorn :8000) + frontend dev server (:5173)
 	(cd $(BACKEND) && uvicorn main:app --reload --port 8002) & \
 	(cd $(FRONTEND) && npm run dev) & \
 	wait
+
+analyze: ## Rebuild conflict analysis from PDFs (python -m pipeline.run [ARGS=--force])
+	@cd $(BACKEND) && python -m pipeline.run $(ARGS)
+
+eval: ## Run the golden-set regression eval against the current analysis
+	@cd $(BACKEND) && python -m eval.run_eval
 
 doc: ## Start documentation server at http://localhost:8889
 	@cd $(BACKEND) && python ../../documentation/serve.py --port 8889

@@ -20,11 +20,7 @@ archive/app1-zone-map/data/processed/
 # reproducible via `make explore`. report.html (the deliverable) is committed.
 app3-itm-explorer/data/
 
-# App2 generated cache (reproducible by running analyze.py / llm_benchmark.py)
-app2-conflict-resolver/backend/extracted.json
-app2-conflict-resolver/backend/analysis.json
-app2-conflict-resolver/backend/resolutions.json
-app2-conflict-resolver/backend/raw_response.txt
-app2-conflict-resolver/backend/cache/
-app2-conflict-resolver/backend/usage_log.jsonl
+# App2 generated artifacts: extraction, pair caches, merged analysis, usage
+# ledger, resolutions. All reproducible via `make analyze`.
+app2-conflict-resolver/backend/data/
 documentation/dist/
