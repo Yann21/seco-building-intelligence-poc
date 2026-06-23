@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-SECO documentation server — serves README + costing + benchmark with a shared navbar.
+SECO documentation server — README + costing + benchmark + ITM explorer, shared navbar.
 
 Usage:
-    python documentation/serve.py          # default port 8888
+    python documentation/serve.py                # live server, default port 8888
     python documentation/serve.py --port 9000
+    python documentation/serve.py --build dist   # write static HTML to ./dist for deploy
 """
 import argparse
 import http.server
@@ -15,6 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 DOC_DIR = ROOT / "documentation"
+REPORT = ROOT / "app3-itm-explorer" / "report.html"
 
 try:
     import markdown
@@ -22,7 +24,18 @@ try:
 except ImportError:
     HAS_MD = False
 
-NAVBAR = """
+# Navbar link targets differ between live-server mode (clean routes) and
+# static-build mode (relative .html files served under /secodoc/).
+SERVER_LINKS = {"README": "/", "Costing": "/costing", "LLM Benchmark": "/benchmark", "ITM Explorer": "/explorer"}
+BUILD_LINKS = {"README": "index.html", "Costing": "costing.html", "LLM Benchmark": "benchmark.html", "ITM Explorer": "explorer.html"}
+
+
+def make_navbar(links: dict) -> str:
+    items = "\n  ".join(
+        f'<a href="{href}" style="color:#93c5fd;text-decoration:none">{label}</a>'
+        for label, href in links.items()
+    )
+    return f"""
 <nav style="
   background:#1a1a2e;color:#e2e8f0;padding:12px 40px;
   display:flex;align-items:center;gap:24px;
@@ -30,9 +43,7 @@ NAVBAR = """
   font-size:13px;border-bottom:3px solid #3b82f6;position:sticky;top:0;z-index:100
 ">
   <span style="font-weight:700;color:#fff;margin-right:8px">SECO PoC</span>
-  <a href="/" style="color:#93c5fd;text-decoration:none">README</a>
-  <a href="/costing" style="color:#93c5fd;text-decoration:none">Costing</a>
-  <a href="/benchmark" style="color:#93c5fd;text-decoration:none">LLM Benchmark</a>
+  {items}
   <span style="margin-left:auto;font-size:11px;color:#64748b">
     <a href="https://yannhoffmann.com/seco2" target="_blank" style="color:#64748b">live demo ↗</a>
   </span>
@@ -67,17 +78,17 @@ hr{border:none;border-top:1px solid #e2e8f0;margin:28px 0}
 </style>
 """
 
-def inject_navbar(html: str) -> str:
+
+def inject_navbar(html: str, navbar: str) -> str:
     """Inject navbar after <body> tag."""
-    return re.sub(r'(<body[^>]*>)', r'\1' + NAVBAR, html, count=1, flags=re.IGNORECASE)
+    return re.sub(r'(<body[^>]*>)', r'\1' + navbar, html, count=1, flags=re.IGNORECASE)
 
 
-def readme_html() -> str:
+def readme_html(navbar: str) -> str:
     md_text = (ROOT / "README.md").read_text()
     if HAS_MD:
-        body = markdown.markdown(md_text, extensions=["tables", "fenced_code"])
+        body = markdown.markdown(md_text, extensions=["tables", "fenced_code", "toc"])
     else:
-        # Fallback: wrap in <pre> if markdown not installed
         body = f"<pre>{md_text}</pre><p style='color:#f59e0b'>pip install markdown for rendered view</p>"
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -88,55 +99,87 @@ def readme_html() -> str:
   {README_CSS}
 </head>
 <body>
-{NAVBAR}
+{navbar}
 <div class="md-body">{body}</div>
 </body>
 </html>"""
 
 
-class SECOHandler(http.server.SimpleHTTPRequestHandler):
-    def do_GET(self):
-        path = self.path.split("?")[0].rstrip("/")
+def report_html(navbar: str) -> str:
+    if not REPORT.exists():
+        return f"<!DOCTYPE html><body>{navbar}<div style='padding:40px;font-family:sans-serif'>" \
+               "<h2>ITM Explorer report not built yet</h2><p>Run <code>make explore</code> first.</p></div></body>"
+    return inject_navbar(REPORT.read_text(), navbar)
 
-        if path in ("", "/"):
-            self._serve_html(readme_html())
-        elif path == "/costing":
-            html = (DOC_DIR / "costing.html").read_text()
-            self._serve_html(inject_navbar(html))
-        elif path == "/benchmark":
-            html = (DOC_DIR / "llm_benchmark.html").read_text()
-            self._serve_html(inject_navbar(html))
-        else:
-            self.send_response(404)
+
+def make_handler(navbar: str):
+    class SECOHandler(http.server.SimpleHTTPRequestHandler):
+        def do_GET(self):
+            path = self.path.split("?")[0].rstrip("/")
+            if path in ("", "/"):
+                self._serve(readme_html(navbar))
+            elif path == "/costing":
+                self._serve(inject_navbar((DOC_DIR / "costing.html").read_text(), navbar))
+            elif path == "/benchmark":
+                self._serve(inject_navbar((DOC_DIR / "llm_benchmark.html").read_text(), navbar))
+            elif path == "/explorer":
+                self._serve(report_html(navbar))
+            else:
+                self.send_response(404); self.end_headers(); self.wfile.write(b"Not found")
+
+        def _serve(self, html: str):
+            data = html.encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
             self.end_headers()
-            self.wfile.write(b"Not found")
+            self.wfile.write(data)
 
-    def _serve_html(self, html: str):
-        data = html.encode()
-        self.send_response(200)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
-        self.send_header("Content-Length", str(len(data)))
-        self.end_headers()
-        self.wfile.write(data)
+        def log_message(self, fmt, *args):
+            print(f"  {args[0]} {args[1]}")
 
-    def log_message(self, fmt, *args):
-        print(f"  {args[0]} {args[1]}")
+    return SECOHandler
+
+
+def build(outdir: Path):
+    """Write static HTML files (relative-link navbar) for deployment under /secodoc/."""
+    navbar = make_navbar(BUILD_LINKS)
+    outdir.mkdir(parents=True, exist_ok=True)
+    pages = {
+        "index.html": readme_html(navbar),
+        "costing.html": inject_navbar((DOC_DIR / "costing.html").read_text(), navbar),
+        "benchmark.html": inject_navbar((DOC_DIR / "llm_benchmark.html").read_text(), navbar),
+        "explorer.html": report_html(navbar),
+    }
+    for name, html in pages.items():
+        (outdir / name).write_text(html, encoding="utf-8")
+        print(f"  wrote {outdir / name}")
+    print(f"\n✓ Static docs built → {outdir} ({len(pages)} pages)")
+
+
+def serve(port: int):
+    navbar = make_navbar(SERVER_LINKS)
+    os.chdir(ROOT)
+    with socketserver.TCPServer(("", port), make_handler(navbar)) as httpd:
+        httpd.allow_reuse_address = True
+        print(f"SECO docs → http://localhost:{port}")
+        print("  /          README")
+        print("  /costing   API costing report")
+        print("  /benchmark LLM benchmark & quality audit")
+        print("  /explorer  ITM corpus map (app 3)")
+        print("Ctrl+C to stop")
+        httpd.serve_forever()
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8888)
+    parser.add_argument("--build", metavar="DIR", help="Write static HTML to DIR and exit")
     args = parser.parse_args()
-
-    os.chdir(ROOT)
-    with socketserver.TCPServer(("", args.port), SECOHandler) as httpd:
-        httpd.allow_reuse_address = True
-        print(f"SECO docs → http://localhost:{args.port}")
-        print("  /          README")
-        print("  /costing   API costing report")
-        print("  /benchmark LLM benchmark & quality audit")
-        print("Ctrl+C to stop")
-        httpd.serve_forever()
+    if args.build:
+        build(Path(args.build))
+    else:
+        serve(args.port)
 
 
 if __name__ == "__main__":

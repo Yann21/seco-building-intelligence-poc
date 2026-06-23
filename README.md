@@ -4,6 +4,22 @@
 
 ---
 
+## Table of contents
+
+- [🏗️ What problem, for whom?](#what-problem-for-whom)
+- [🗺️ Regulatory scope — what this PoC covers and what it doesn't](#regulatory-scope-what-this-poc-covers-and-what-it-doesnt)
+- [🎯 Why is this relevant to SECO?](#why-is-this-relevant-to-seco)
+- [📂 Data sources](#data-sources)
+- [⚙️ Technical decisions and trade-offs](#technical-decisions-and-trade-offs)
+  - [🔗 App 2 architecture: pairwise document index](#app-2-architecture-pairwise-document-index)
+  - [🛡️ AI robustness stack](#ai-robustness-stack)
+  - [🔒 Data confidentiality and LLM deployment tiers](#data-confidentiality-and-llm-deployment-tiers)
+  - [💰 API dependency and cost model](#api-dependency-and-cost-model)
+- [🚀 What goes to production tomorrow vs. what gets thrown away](#what-goes-to-production-tomorrow-vs-what-gets-thrown-away)
+- [🔭 3-month vision](#3-month-vision)
+
+---
+
 ## What problem, for whom?
 
 Construction projects in Luxembourg touch a web of overlapping regulatory texts — ITM workplace safety prescriptions, PAG urban planning rules, European norms, communal supplements. These documents were written by different authorities at different dates and are never cross-referenced. When values contradict (e.g. emergency lighting test frequency: 3 months in one text, 6 months in another), the architect or site engineer has no systematic way to know, and defaults to the wrong one.
@@ -11,6 +27,25 @@ Construction projects in Luxembourg touch a web of overlapping regulatory texts 
 **App 2 — Regulatory Conflict Resolver** surfaces those contradictions automatically. The target user is a SECO inspector or an architect preparing a building permit dossier: someone who needs to know *which value to apply* when two binding texts disagree.
 
 **App 1 — PAG Zone Map** addresses a related pain: understanding what's allowed on a given parcel before even starting design. It maps the full PAG zoning of Luxembourg and surfaces the applicable rules, required documents, and SECO control points on a single click.
+
+---
+
+## Regulatory scope — what this PoC covers and what it doesn't
+
+A commercial building project in Luxembourg touches at least four distinct regulatory layers, each controlled by a different authority:
+
+| Layer | Authority | Scope | Phase |
+|---|---|---|---|
+| European | CEN (Eurocodes), EU directives | Structural design, machinery, equipment (elevators → directive 95/16/CE) | Design |
+| National | Grand-ducal regulations, ministerial arrêtés | Implementation of EU directives, national safety standards | Design / permit |
+| Regulatory bodies | **ITM** (workplace safety), **CGDIS** (fire safety), Administration des Bâtiments Publics | Operational prescriptions, periodic inspections, authorisations | Construction / operation |
+| Municipal | Commune, PAG, PAP, communal supplements | Zoning, land use, urban form | Permit |
+
+These layers are never cross-referenced in a single document. An architect must navigate all of them simultaneously, and conflicts exist not just *within* a layer but *across* layers — a corridor width compliant under Eurocode structural loads may still violate an ITM evacuation prescription.
+
+**This PoC deliberately scopes to the ITM layer only** — specifically the ITM-CL/ET prescriptions types published by the Inspection du Travail et des Mines. This is the right entry point for SECO because: (1) ITM documents are publicly available and machine-readable, (2) ITM is the primary regulatory interface for construction site safety, and (3) intra-ITM conflicts are already numerous and consequential enough to demonstrate the approach.
+
+The full scope worth building toward: a conflict resolver that spans ITM × CGDIS × Eurocodes National Annexes × communal supplements — plus a visual map of which authority controls what, at which project phase, so inspectors and architects have a single reference for the entire regulatory stack.
 
 ---
 
