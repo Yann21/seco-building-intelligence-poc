@@ -26,8 +26,10 @@ except ImportError:
 
 # Navbar link targets differ between live-server mode (clean routes) and
 # static-build mode (relative .html files served under /secodoc/).
-SERVER_LINKS = {"README": "/", "Costing": "/costing", "LLM Benchmark": "/benchmark", "ITM Explorer": "/explorer"}
-BUILD_LINKS = {"README": "index.html", "Costing": "costing.html", "LLM Benchmark": "benchmark.html", "ITM Explorer": "explorer.html"}
+SERVER_LINKS = {"README": "/", "Costing": "/costing", "LLM Benchmark": "/benchmark", "ITM Explorer": "/explorer", "Quality": "/quality"}
+BUILD_LINKS = {"README": "index.html", "Costing": "costing.html", "LLM Benchmark": "benchmark.html", "ITM Explorer": "explorer.html", "Quality": "quality.html"}
+
+COVERAGE_JSON = DOC_DIR / "coverage.json"
 
 
 def make_navbar(links: dict) -> str:
@@ -112,6 +114,70 @@ def report_html(navbar: str) -> str:
     return inject_navbar(REPORT.read_text(), navbar)
 
 
+def _quality_page(navbar: str, body: str) -> str:
+    return f"""<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SECO — Code quality</title>{README_CSS}</head>
+<body>{navbar}<div class="md-body">{body}</div></body></html>"""
+
+
+def coverage_html(navbar: str) -> str:
+    """Render the measured coverage report (documentation/coverage.json)."""
+    import json
+    if not COVERAGE_JSON.exists():
+        return _quality_page(navbar,
+            "<h1>Code quality &amp; coverage</h1><p>No coverage report yet — generate it with "
+            "<code>make test</code> (writes <code>documentation/coverage.json</code>).</p>")
+
+    data = json.loads(COVERAGE_JSON.read_text())
+    totals = data["totals"]
+    total = totals["percent_covered"]
+
+    def colour(pct):
+        return "#10b981" if pct >= 90 else "#f59e0b" if pct >= 70 else "#ef4444"
+
+    def bar(pct):
+        return (f'<span style="background:#f1f5f9;border-radius:4px;height:8px;width:120px;'
+                f'overflow:hidden;display:inline-block;vertical-align:middle">'
+                f'<span style="background:{colour(pct)};height:8px;width:{pct:.0f}%;'
+                f'display:inline-block;vertical-align:top"></span></span>')
+
+    rows = ""
+    for name, info in sorted(data["files"].items(),
+                             key=lambda kv: kv[1]["summary"]["percent_covered"], reverse=True):
+        s = info["summary"]
+        pct = s["percent_covered"]
+        rows += (f"<tr><td><code>{name}</code></td>"
+                 f"<td style='text-align:right'>{s['covered_lines']}/{s['num_statements']}</td>"
+                 f"<td>{bar(pct)} &nbsp;<span style='font-variant-numeric:tabular-nums'>{pct:.0f}%</span></td></tr>")
+
+    body = f"""
+<h1>Code quality &amp; coverage</h1>
+<p>Offline test suite for the App&nbsp;2 backend (pipeline + API), run with
+<code>make test</code>. No API key required — the live LLM call path is covered at the
+<em>output</em> level by the golden-set eval (<code>make eval</code>) instead of mocked here.</p>
+<div style="display:flex;align-items:center;gap:24px;margin:24px 0;padding:20px 24px;
+     background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px">
+  <div style="font-size:46px;font-weight:800;color:{colour(total)};font-variant-numeric:tabular-nums">{total:.0f}%</div>
+  <div style="font-size:13px;color:#475569">
+    <strong>line coverage</strong> · {totals['num_statements']} statements<br>
+    {totals['covered_lines']} covered · {totals['missing_lines']} uncovered
+  </div>
+</div>
+<table>
+  <thead><tr><th>Module</th><th style="text-align:right">Lines</th><th>Coverage</th></tr></thead>
+  <tbody>{rows}</tbody>
+</table>
+<p style="color:#64748b;font-size:12px;margin-top:16px">
+  Uncovered lines concentrate in <code>pipeline/analyze.py</code>'s <code>run_pair</code>
+  — the actual Anthropic call — excluded from the offline suite by design. Regenerate with
+  <code>make test</code>.
+</p>
+"""
+    return _quality_page(navbar, body)
+
+
 def make_handler(navbar: str):
     class SECOHandler(http.server.SimpleHTTPRequestHandler):
         def do_GET(self):
@@ -124,6 +190,8 @@ def make_handler(navbar: str):
                 self._serve(inject_navbar((DOC_DIR / "llm_benchmark.html").read_text(), navbar))
             elif path == "/explorer":
                 self._serve(report_html(navbar))
+            elif path == "/quality":
+                self._serve(coverage_html(navbar))
             else:
                 self.send_response(404); self.end_headers(); self.wfile.write(b"Not found")
 
@@ -150,6 +218,7 @@ def build(outdir: Path):
         "costing.html": inject_navbar((DOC_DIR / "costing.html").read_text(), navbar),
         "benchmark.html": inject_navbar((DOC_DIR / "llm_benchmark.html").read_text(), navbar),
         "explorer.html": report_html(navbar),
+        "quality.html": coverage_html(navbar),
     }
     for name, html in pages.items():
         (outdir / name).write_text(html, encoding="utf-8")
@@ -167,6 +236,7 @@ def serve(port: int):
         print("  /costing   API costing report")
         print("  /benchmark LLM benchmark & quality audit")
         print("  /explorer  ITM corpus map (app 3)")
+        print("  /quality   test coverage report")
         print("Ctrl+C to stop")
         httpd.serve_forever()
 
