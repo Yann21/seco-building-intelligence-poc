@@ -7,6 +7,7 @@ Usage:
     python documentation/serve.py --port 9000
     python documentation/serve.py --build dist   # write static HTML to ./dist for deploy
 """
+
 import argparse
 import http.server
 import os
@@ -20,14 +21,27 @@ REPORT = ROOT / "app3-itm-explorer" / "report.html"
 
 try:
     import markdown
+
     HAS_MD = True
 except ImportError:
     HAS_MD = False
 
 # Navbar link targets differ between live-server mode (clean routes) and
 # static-build mode (relative .html files served under /secodoc/).
-SERVER_LINKS = {"README": "/", "Costing": "/costing", "LLM Benchmark": "/benchmark", "ITM Explorer": "/explorer", "Quality": "/quality"}
-BUILD_LINKS = {"README": "index.html", "Costing": "costing.html", "LLM Benchmark": "benchmark.html", "ITM Explorer": "explorer.html", "Quality": "quality.html"}
+SERVER_LINKS = {
+    "README": "/",
+    "Costing": "/costing",
+    "LLM Benchmark": "/benchmark",
+    "ITM Explorer": "/explorer",
+    "Quality": "/quality",
+}
+BUILD_LINKS = {
+    "README": "index.html",
+    "Costing": "costing.html",
+    "LLM Benchmark": "benchmark.html",
+    "ITM Explorer": "explorer.html",
+    "Quality": "quality.html",
+}
 
 COVERAGE_JSON = DOC_DIR / "coverage.json"
 
@@ -51,6 +65,7 @@ def make_navbar(links: dict) -> str:
   </span>
 </nav>
 """
+
 
 README_CSS = """
 <style>
@@ -83,7 +98,7 @@ hr{border:none;border-top:1px solid #e2e8f0;margin:28px 0}
 
 def inject_navbar(html: str, navbar: str) -> str:
     """Inject navbar after <body> tag."""
-    return re.sub(r'(<body[^>]*>)', r'\1' + navbar, html, count=1, flags=re.IGNORECASE)
+    return re.sub(r"(<body[^>]*>)", r"\1" + navbar, html, count=1, flags=re.IGNORECASE)
 
 
 def readme_html(navbar: str) -> str:
@@ -109,8 +124,10 @@ def readme_html(navbar: str) -> str:
 
 def report_html(navbar: str) -> str:
     if not REPORT.exists():
-        return f"<!DOCTYPE html><body>{navbar}<div style='padding:40px;font-family:sans-serif'>" \
-               "<h2>ITM Explorer report not built yet</h2><p>Run <code>make explore</code> first.</p></div></body>"
+        return (
+            f"<!DOCTYPE html><body>{navbar}<div style='padding:40px;font-family:sans-serif'>"
+            "<h2>ITM Explorer report not built yet</h2><p>Run <code>make explore</code> first.</p></div></body>"
+        )
     return inject_navbar(REPORT.read_text(), navbar)
 
 
@@ -125,10 +142,13 @@ def _quality_page(navbar: str, body: str) -> str:
 def coverage_html(navbar: str) -> str:
     """Render the measured coverage report (documentation/coverage.json)."""
     import json
+
     if not COVERAGE_JSON.exists():
-        return _quality_page(navbar,
+        return _quality_page(
+            navbar,
             "<h1>Code quality &amp; coverage</h1><p>No coverage report yet — generate it with "
-            "<code>make test</code> (writes <code>documentation/coverage.json</code>).</p>")
+            "<code>make test</code> (writes <code>documentation/coverage.json</code>).</p>",
+        )
 
     data = json.loads(COVERAGE_JSON.read_text())
     totals = data["totals"]
@@ -138,19 +158,24 @@ def coverage_html(navbar: str) -> str:
         return "#10b981" if pct >= 90 else "#f59e0b" if pct >= 70 else "#ef4444"
 
     def bar(pct):
-        return (f'<span style="background:#f1f5f9;border-radius:4px;height:8px;width:120px;'
-                f'overflow:hidden;display:inline-block;vertical-align:middle">'
-                f'<span style="background:{colour(pct)};height:8px;width:{pct:.0f}%;'
-                f'display:inline-block;vertical-align:top"></span></span>')
+        return (
+            f'<span style="background:#f1f5f9;border-radius:4px;height:8px;width:120px;'
+            f'overflow:hidden;display:inline-block;vertical-align:middle">'
+            f'<span style="background:{colour(pct)};height:8px;width:{pct:.0f}%;'
+            f'display:inline-block;vertical-align:top"></span></span>'
+        )
 
     rows = ""
-    for name, info in sorted(data["files"].items(),
-                             key=lambda kv: kv[1]["summary"]["percent_covered"], reverse=True):
+    for name, info in sorted(
+        data["files"].items(), key=lambda kv: kv[1]["summary"]["percent_covered"], reverse=True
+    ):
         s = info["summary"]
         pct = s["percent_covered"]
-        rows += (f"<tr><td><code>{name}</code></td>"
-                 f"<td style='text-align:right'>{s['covered_lines']}/{s['num_statements']}</td>"
-                 f"<td>{bar(pct)} &nbsp;<span style='font-variant-numeric:tabular-nums'>{pct:.0f}%</span></td></tr>")
+        rows += (
+            f"<tr><td><code>{name}</code></td>"
+            f"<td style='text-align:right'>{s['covered_lines']}/{s['num_statements']}</td>"
+            f"<td>{bar(pct)} &nbsp;<span style='font-variant-numeric:tabular-nums'>{pct:.0f}%</span></td></tr>"
+        )
 
     body = f"""
 <h1>Code quality &amp; coverage</h1>
@@ -161,8 +186,8 @@ def coverage_html(navbar: str) -> str:
      background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px">
   <div style="font-size:46px;font-weight:800;color:{colour(total)};font-variant-numeric:tabular-nums">{total:.0f}%</div>
   <div style="font-size:13px;color:#475569">
-    <strong>line coverage</strong> · {totals['num_statements']} statements<br>
-    {totals['covered_lines']} covered · {totals['missing_lines']} uncovered
+    <strong>line coverage</strong> · {totals["num_statements"]} statements<br>
+    {totals["covered_lines"]} covered · {totals["missing_lines"]} uncovered
   </div>
 </div>
 <table>
@@ -174,6 +199,13 @@ def coverage_html(navbar: str) -> str:
   — the actual Anthropic call — excluded from the offline suite by design. Regenerate with
   <code>make test</code>.
 </p>
+<h2 style="margin-top:32px">Formatting &amp; linting</h2>
+<p>The codebase is formatted and linted with <strong>ruff</strong> — one tool consolidating
+black, isort, flake8 / pycodestyle / pyflakes, pyupgrade and bugbear (config in
+<code>pyproject.toml</code>). Enforced with <code>make lint</code>; the maintained tree is
+ruff-clean.</p>
+<div style="display:inline-block;background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;
+     border-radius:6px;padding:6px 14px;font-size:13px;font-weight:600">ruff check . — All checks passed</div>
 """
     return _quality_page(navbar, body)
 
@@ -193,7 +225,9 @@ def make_handler(navbar: str):
             elif path == "/quality":
                 self._serve(coverage_html(navbar))
             else:
-                self.send_response(404); self.end_headers(); self.wfile.write(b"Not found")
+                self.send_response(404)
+                self.end_headers()
+                self.wfile.write(b"Not found")
 
         def _serve(self, html: str):
             data = html.encode()

@@ -182,6 +182,15 @@ make test        # pytest + coverage  → writes documentation/coverage.json
 
 The uncovered lines are concentrated in the live LLM call path (`run_pair`), which by design isn't exercised offline — the golden set covers its *output* instead. The measured figure is rendered live on the **Quality** page of the doc server (`make doc`).
 
+Formatting and linting are unified under **ruff** (one fast tool replacing black, isort, flake8/pycodestyle/pyflakes, pyupgrade and bugbear), configured in `pyproject.toml`:
+
+```
+make lint        # ruff check  — PEP 8, import order, modern syntax, likely-bug lints
+make format      # ruff format + autofix
+```
+
+The whole maintained codebase is ruff-formatted and lint-clean; the handful of suppressions (`pyproject.toml`) are each annotated with a reason (e.g. Plotly's idiomatic `dict(...)` kwargs, deliberate `sys.path` bootstrapping in standalone scripts).
+
 ### Data confidentiality and LLM deployment tiers
 
 The current production path sends document text to the Anthropic API. For a technical inspection firm this creates a confidentiality exposure: client project data, unpublished permit dossiers, or proprietary inspection reports would transit external servers. Three deployment tiers address this at increasing infrastructure cost:
