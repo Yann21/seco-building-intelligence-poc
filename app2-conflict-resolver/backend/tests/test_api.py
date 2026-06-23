@@ -1,8 +1,8 @@
 """FastAPI endpoints via TestClient (offline — analysis served from warm cache)."""
-import pytest
-from fastapi.testclient import TestClient
 
 import main
+import pytest
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture
@@ -31,9 +31,14 @@ def test_usage_endpoint(client):
 
 
 def test_resolution_roundtrip(client):
-    r = client.post("/api/resolve", json={
-        "conflict_id": "X1", "decision": "appliquer 3 mois", "resolved_by": "Inspecteur",
-    })
+    r = client.post(
+        "/api/resolve",
+        json={
+            "conflict_id": "X1",
+            "decision": "appliquer 3 mois",
+            "resolved_by": "Inspecteur",
+        },
+    )
     assert r.json()["status"] == "saved"
     stored = client.get("/api/resolutions").json()
     assert stored["X1"]["decision"] == "appliquer 3 mois"

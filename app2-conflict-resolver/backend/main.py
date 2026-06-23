@@ -1,13 +1,14 @@
 """App 2 – Document Conflict Resolver API."""
+
 import json
 import os
 import sys
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -86,7 +87,7 @@ def resolve_conflict(payload: ResolutionPayload):
     resolutions[payload.conflict_id] = {
         "decision": payload.decision,
         "resolved_by": payload.resolved_by,
-        "resolved_at": datetime.now(timezone.utc).isoformat(),
+        "resolved_at": datetime.now(UTC).isoformat(),
     }
     save_resolutions(resolutions)
     return {"status": "saved", "conflict_id": payload.conflict_id}

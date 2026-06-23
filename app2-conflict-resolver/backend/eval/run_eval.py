@@ -11,6 +11,7 @@ It runs against the *current* merged analysis. With warm pair caches that is
 offline and free (no API key); cold caches would require a build first, so the
 eval refuses rather than silently spending money.
 """
+
 import json
 import sys
 from pathlib import Path
@@ -62,15 +63,19 @@ def _evaluate_case(case: dict, conflicts: list[dict]) -> dict:
 
     if best is None:
         reason = (
-            "no conflict on this pair" if not candidates
+            "no conflict on this pair"
+            if not candidates
             else f"{len(candidates)} conflict(s) on pair, none with >={case['min_keyword_hits']} keywords"
         )
         return {"name": case["name"], "passed": False, "reason": reason}
 
     sev = best["conflict"].get("severity", "?")
     if best["rank"] < floor:
-        return {"name": case["name"], "passed": False,
-                "reason": f"severity {sev} below floor {case['min_severity']}"}
+        return {
+            "name": case["name"],
+            "passed": False,
+            "reason": f"severity {sev} below floor {case['min_severity']}",
+        }
 
     return {
         "name": case["name"],

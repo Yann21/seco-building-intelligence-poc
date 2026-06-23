@@ -1,0 +1,43 @@
+# Python tooling config for the SECO PoC.
+# Ruff consolidates the usual stack — black (formatting), isort (imports),
+# flake8 / pycodestyle / pyflakes (PEP 8 + lint), pyupgrade, bugbear — into one
+# fast tool with a single source of truth.
+#
+#   make lint     # ruff check  (read-only)
+#   make format   # ruff format + ruff check --fix
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [
+    "archive",         # archived App 1 — kept for reference, not maintained
+    "**/data",         # generated artifacts (caches, PDFs, embeddings)
+    "**/report.html",  # generated HTML
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort (import ordering)
+    "UP",  # pyupgrade (modern syntax)
+    "B",   # flake8-bugbear (likely bugs)
+    "SIM", # flake8-simplify
+    "C4",  # flake8-comprehensions
+]
+# Long prompt/SQL-like string literals shouldn't force awkward wrapping.
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# These modules bootstrap sys.path (to import the backend from a script context)
+# before importing project code — the late imports are deliberate, not a smell.
+"app2-conflict-resolver/backend/main.py" = ["E402"]
+"documentation/costing.py" = ["E402"]
+"documentation/llm_benchmark.py" = ["E402"]
+# explore.py: C408 = Plotly's idiomatic dict(...) kwargs; SIM102 = the
+# match-then-exclude keyword-classification pattern reads clearer un-merged.
+"app3-itm-explorer/explore.py" = ["C408", "SIM102"]
+
+[tool.ruff.format]
+quote-style = "double"

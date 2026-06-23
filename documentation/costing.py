@@ -21,10 +21,11 @@ Usage:
     python documentation/costing.py
     python documentation/costing.py --output documentation/costing.html
 """
+
 import argparse
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import anthropic
@@ -34,22 +35,24 @@ ROOT = Path(__file__).parent.parent
 load_dotenv(ROOT / ".env")
 sys.path.insert(0, str(ROOT / "app2-conflict-resolver" / "backend"))
 
-from analyze import SYSTEM_PROMPT, PAIR_PROMPT, MODEL, COST_INPUT_PER_TOKEN, COST_OUTPUT_PER_TOKEN
-from extract import get_extracted
+from pipeline.analyze import PAIR_PROMPT, SYSTEM_PROMPT
+from pipeline.config import COST_INPUT_PER_TOKEN, COST_OUTPUT_PER_TOKEN, MODEL
+from pipeline.extract import get_extracted
 
 OUTPUT_TOKENS_PER_PAIR_EST = 4000  # conservative upper bound (observed: 2k–4k)
 
 
 # ── Token counting ─────────────────────────────────────────────────────────────
 
+
 def build_pair_prompt(doc_a: dict, doc_b: dict) -> str:
     doc_sections = ""
     for doc in [doc_a, doc_b]:
         doc_sections += (
-            f"\n\n{'='*60}\n"
+            f"\n\n{'=' * 60}\n"
             f"DOCUMENT: {doc['title']}\n"
             f"Autorité: {doc['authority']} | Date: {doc['date']}\n"
-            f"{'='*60}\n\n"
+            f"{'=' * 60}\n\n"
             f"{doc['full_text']}"
         )
     return PAIR_PROMPT.format(doc_sections=doc_sections)
@@ -84,65 +87,95 @@ def avg_doc_tokens_from_pairs(pair_stats: list[dict], prompt_overhead: int) -> i
     # For 3 docs: solve exactly
     doc_ids = list({p["doc_a"] for p in pair_stats} | {p["doc_b"] for p in pair_stats})
     if len(doc_ids) == 3 and len(pair_stats) == 3:
-        content = {p["doc_a"] + "+" + p["doc_b"]: p["input_tokens"] - prompt_overhead
-                   for p in pair_stats}
+        content = {
+            p["doc_a"] + "+" + p["doc_b"]: p["input_tokens"] - prompt_overhead for p in pair_stats
+        }
         vals = list(content.values())
         total = sum(vals) / 2  # each doc counted twice across 3 pairs
         return round(total / 3)
     # General case: average pair content / 2
-    avg_pair_content = sum(p["input_tokens"] - prompt_overhead for p in pair_stats) / len(pair_stats)
+    avg_pair_content = sum(p["input_tokens"] - prompt_overhead for p in pair_stats) / len(
+        pair_stats
+    )
     return round(avg_pair_content / 2)
 
 
 # ── HTML generation ────────────────────────────────────────────────────────────
+
 
 def gpu_section(pair_stats: list[dict], total_api_cost: float) -> str:
     """
     GPU cost projections for g4dn.xlarge (NVIDIA T4 16 GB VRAM, Frankfurt eu-central-1).
     Source: interpolate/aws/spin-up.sh — same instance used for Stable Diffusion work.
     """
-    on_demand   = 0.526   # $/hr, eu-central-1 on-demand
-    spot        = 0.158   # $/hr, ~70% discount
-    gen_tps     = 180     # tok/sec, Mistral 7B Q4_K_M generation on T4
-    prefill_tps = 4000    # tok/sec, prefill is memory-bandwidth bound
+    on_demand = 0.526  # $/hr, eu-central-1 on-demand
+    spot = 0.158  # $/hr, ~70% discount
+    gen_tps = 180  # tok/sec, Mistral 7B Q4_K_M generation on T4
+    prefill_tps = 4000  # tok/sec, prefill is memory-bandwidth bound
 
     n_pairs = len(pair_stats)
     avg_input = sum(p["input_tokens"] for p in pair_stats) / n_pairs if n_pairs else 32000
     output_est = OUTPUT_TOKENS_PER_PAIR_EST
 
-    prefill_s   = avg_input  / prefill_tps
-    gen_s       = output_est / gen_tps
-    per_pair_s  = prefill_s + gen_s
-    total_s     = per_pair_s * n_pairs
+    prefill_s = avg_input / prefill_tps
+    gen_s = output_est / gen_tps
+    per_pair_s = prefill_s + gen_s
+    total_s = per_pair_s * n_pairs
 
-    cost_od   = total_s / 3600 * on_demand
+    cost_od = total_s / 3600 * on_demand
     cost_spot = total_s / 3600 * spot
 
-    lora_h    = 0.75   # LoRA fine-tune on T4, ~100 examples
+    lora_h = 0.75  # LoRA fine-tune on T4, ~100 examples
     lora_cost = lora_h * on_demand
 
     speedup = total_api_cost / cost_od if cost_od > 0 else 0
 
     rows = [
-        ("Instance",                "g4dn.xlarge",                  "AWS Frankfurt (eu-central-1) — same config as interpolate/aws/spin-up.sh"),
-        ("GPU",                     "NVIDIA T4 · 16 GB VRAM",       "8.1 TFLOPS FP32 · 320 GB/s memory bandwidth"),
-        ("Model",                   "Mistral 7B Q4_K_M",            "4.1 GB VRAM · leaves 12 GB headroom · near-FP16 quality"),
-        ("Generation throughput",   "~180 tok/sec",                  "T4 memory-bandwidth bound at Q4 quant"),
-        ("Prefill (input)",         f"~{avg_input/prefill_tps:.1f}s / pair",  f"{avg_input:,.0f} tok avg input ÷ {prefill_tps:,} tok/s"),
-        ("Generation (output)",     f"~{gen_s:.1f}s / pair",        f"{output_est:,} tok output ÷ {gen_tps} tok/s"),
-        ("Total inference time",    f"~{total_s:.0f}s ({n_pairs} pairs)",  f"{per_pair_s:.1f}s/pair · sequential; trivially parallelisable"),
-        ("Cost · on-demand",        f"${cost_od:.4f}",              f"${on_demand}/hr × {total_s:.0f}s"),
-        ("Cost · spot instance",    f"${cost_spot:.4f}",            f"${spot}/hr · ~70% discount · interruptible"),
-        ("vs. Claude API",          f"{speedup:.0f}× cheaper / run", f"API ${total_api_cost:.4f} → GPU ${cost_od:.4f} once instance is running"),
-        ("LoRA fine-tune (optional)", f"~{lora_h}h · ${lora_cost:.2f}",  "100-example domain adaptation on T4 · one-time cost"),
+        (
+            "Instance",
+            "g4dn.xlarge",
+            "AWS Frankfurt (eu-central-1) — same config as interpolate/aws/spin-up.sh",
+        ),
+        ("GPU", "NVIDIA T4 · 16 GB VRAM", "8.1 TFLOPS FP32 · 320 GB/s memory bandwidth"),
+        ("Model", "Mistral 7B Q4_K_M", "4.1 GB VRAM · leaves 12 GB headroom · near-FP16 quality"),
+        ("Generation throughput", "~180 tok/sec", "T4 memory-bandwidth bound at Q4 quant"),
+        (
+            "Prefill (input)",
+            f"~{avg_input / prefill_tps:.1f}s / pair",
+            f"{avg_input:,.0f} tok avg input ÷ {prefill_tps:,} tok/s",
+        ),
+        (
+            "Generation (output)",
+            f"~{gen_s:.1f}s / pair",
+            f"{output_est:,} tok output ÷ {gen_tps} tok/s",
+        ),
+        (
+            "Total inference time",
+            f"~{total_s:.0f}s ({n_pairs} pairs)",
+            f"{per_pair_s:.1f}s/pair · sequential; trivially parallelisable",
+        ),
+        ("Cost · on-demand", f"${cost_od:.4f}", f"${on_demand}/hr × {total_s:.0f}s"),
+        (
+            "Cost · spot instance",
+            f"${cost_spot:.4f}",
+            f"${spot}/hr · ~70% discount · interruptible",
+        ),
+        (
+            "vs. Claude API",
+            f"{speedup:.0f}× cheaper / run",
+            f"API ${total_api_cost:.4f} → GPU ${cost_od:.4f} once instance is running",
+        ),
+        (
+            "LoRA fine-tune (optional)",
+            f"~{lora_h}h · ${lora_cost:.2f}",
+            "100-example domain adaptation on T4 · one-time cost",
+        ),
     ]
 
     rows_html = "\n".join(
         f'<tr><td>{r}</td><td class="num">{v}</td><td style="color:#64748b;font-size:12px">{n}</td></tr>'
         for r, v, n in rows
     )
-
-    breakeven_analyses = int((on_demand * 8) / (total_api_cost - cost_od * 8)) if total_api_cost > cost_od * 8 else 0
 
     return f"""
   <section class="gpu-section">
@@ -187,11 +220,11 @@ def generate_html(
         cluster = doc.get("cluster", "default")
         doc_rows_html += f"""
         <tr>
-          <td><code>{doc['id']}</code></td>
-          <td>{doc['title']}</td>
-          <td class="num">{doc['authority'].split('(')[1].rstrip(')') if '(' in doc['authority'] else doc['authority']}</td>
+          <td><code>{doc["id"]}</code></td>
+          <td>{doc["title"]}</td>
+          <td class="num">{doc["authority"].split("(")[1].rstrip(")") if "(" in doc["authority"] else doc["authority"]}</td>
           <td class="num"><span class="cluster-tag">{cluster}</span></td>
-          <td class="num">{len(doc['pages'])}</td>
+          <td class="num">{len(doc["pages"])}</td>
           <td class="num">{words:,}</td>
         </tr>"""
 
@@ -201,13 +234,13 @@ def generate_html(
         content_tokens = p["input_tokens"] - prompt_overhead
         pair_rows_html += f"""
         <tr>
-          <td><code>{p['doc_a']}</code> × <code>{p['doc_b']}</code>
-            <span class="cluster-tag" style="margin-left:6px">{p['cluster']}</span></td>
+          <td><code>{p["doc_a"]}</code> × <code>{p["doc_b"]}</code>
+            <span class="cluster-tag" style="margin-left:6px">{p["cluster"]}</span></td>
           <td class="num">{prompt_overhead:,}</td>
           <td class="num">{content_tokens:,}</td>
-          <td class="num"><strong>{p['input_tokens']:,}</strong></td>
+          <td class="num"><strong>{p["input_tokens"]:,}</strong></td>
           <td class="num">{OUTPUT_TOKENS_PER_PAIR_EST:,} <span class="est">est.</span></td>
-          <td class="num cost">${p['cost_usd']:.4f}</td>
+          <td class="num cost">${p["cost_usd"]:.4f}</td>
         </tr>"""
 
     # ── Metric cards ──
@@ -534,6 +567,7 @@ thead tr:last-child th{font-size:10px;padding:4px 10px;border-bottom:2px solid #
 
 # ── Entry point ────────────────────────────────────────────────────────────────
 
+
 def main():
     parser = argparse.ArgumentParser(description="Generate API costing report")
     parser.add_argument("--output", default=str(ROOT / "documentation" / "costing.html"))
@@ -561,13 +595,15 @@ def main():
                 input_tokens * COST_INPUT_PER_TOKEN
                 + OUTPUT_TOKENS_PER_PAIR_EST * COST_OUTPUT_PER_TOKEN
             )
-            pair_stats.append({
-                "doc_a": da["id"],
-                "doc_b": db["id"],
-                "cluster": da.get("cluster", "default"),
-                "input_tokens": input_tokens,
-                "cost_usd": cost,
-            })
+            pair_stats.append(
+                {
+                    "doc_a": da["id"],
+                    "doc_b": db["id"],
+                    "cluster": da.get("cluster", "default"),
+                    "input_tokens": input_tokens,
+                    "cost_usd": cost,
+                }
+            )
             print(f"    → {input_tokens:,} tokens · ${cost:.4f}")
 
     avg_doc_tok = avg_doc_tokens_from_pairs(pair_stats, prompt_overhead)
@@ -575,13 +611,17 @@ def main():
     for doc in doc_list:
         c = doc.get("cluster", "default")
         cluster_sizes[c] = cluster_sizes.get(c, 0) + 1
-    current_cluster_size = round(sum(cluster_sizes.values()) / len(cluster_sizes)) if cluster_sizes else 3
+    current_cluster_size = (
+        round(sum(cluster_sizes.values()) / len(cluster_sizes)) if cluster_sizes else 3
+    )
 
     print(f"\nAvg. doc tokens (derived): {avg_doc_tok:,}")
     print(f"Avg. cluster size: {current_cluster_size}")
 
-    generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    html = generate_html(doc_list, prompt_overhead, pair_stats, avg_doc_tok, current_cluster_size, generated_at)
+    generated_at = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
+    html = generate_html(
+        doc_list, prompt_overhead, pair_stats, avg_doc_tok, current_cluster_size, generated_at
+    )
 
     out = Path(args.output)
     out.parent.mkdir(exist_ok=True)

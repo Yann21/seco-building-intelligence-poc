@@ -4,6 +4,7 @@ Every conflict the model emits is parsed against these models before it is
 cached or served. Required fields are enforced and ``severity`` is constrained
 to a closed vocabulary, so prompt drift cannot silently corrupt stored results.
 """
+
 from typing import Literal
 
 from pydantic import BaseModel, field_validator

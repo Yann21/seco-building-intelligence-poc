@@ -1,16 +1,21 @@
 """Schema validation — the first robustness layer."""
-import pytest
 
+import pytest
 from pipeline.schema import Conflict, ConflictSource, PairResult
+from pydantic import ValidationError
 
 
 def _conflict(**over):
-    base = dict(
-        id="C1", title="t", topic="illuminance", severity="majeur",
-        type="contradiction", description="d",
-        sources=[{"doc_id": "X", "article": "Art. 1", "quote": "q", "value": "10"}],
-        recommendation="r",
-    )
+    base = {
+        "id": "C1",
+        "title": "t",
+        "topic": "illuminance",
+        "severity": "majeur",
+        "type": "contradiction",
+        "description": "d",
+        "sources": [{"doc_id": "X", "article": "Art. 1", "quote": "q", "value": "10"}],
+        "recommendation": "r",
+    }
     base.update(over)
     return base
 
@@ -27,14 +32,14 @@ def test_severity_is_normalised():
 
 
 def test_bad_severity_rejected():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         Conflict(**_conflict(severity="urgent"))
 
 
 def test_missing_required_field_rejected():
     d = _conflict()
     del d["title"]
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         Conflict(**d)
 
 

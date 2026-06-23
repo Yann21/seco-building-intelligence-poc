@@ -5,14 +5,15 @@
 Equivalent to `python -m eval.run_eval` but as parametrised test cases. Skips
 (rather than spends money) when the pair caches are cold.
 """
+
 import json
 from pathlib import Path
 
 import pytest
-
-from eval.run_eval import _evaluate_case
 from pipeline.analyze import all_pair_caches_exist, get_analysis
 from pipeline.extract import get_extracted
+
+from eval.run_eval import _evaluate_case
 
 GOLDEN = json.loads((Path(__file__).parent / "golden_set.json").read_text())
 

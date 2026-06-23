@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: app2 analyze eval test doc explore deploy deploy-doc help
+.PHONY: app2 analyze eval test lint format doc explore deploy deploy-doc help
 
 BACKEND  = app2-conflict-resolver/backend
 FRONTEND = app2-conflict-resolver/frontend
@@ -27,6 +27,12 @@ test: ## Run backend test suite with coverage → documentation/coverage.json
 	@cd $(BACKEND) && python -m pytest --cov=pipeline --cov=main \
 	  --cov-report=term-missing \
 	  --cov-report=json:$(CURDIR)/documentation/coverage.json
+
+lint: ## Lint all Python with ruff (read-only)
+	@ruff check .
+
+format: ## Auto-format and fix Python with ruff
+	@ruff format . && ruff check . --fix
 
 doc: ## Start documentation server at http://localhost:8889
 	@cd $(BACKEND) && python ../../documentation/serve.py --port 8889

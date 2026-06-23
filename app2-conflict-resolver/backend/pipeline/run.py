@@ -5,6 +5,7 @@
 
 Run from the ``backend/`` directory so the ``pipeline`` package is importable.
 """
+
 import sys
 
 from .analyze import get_analysis

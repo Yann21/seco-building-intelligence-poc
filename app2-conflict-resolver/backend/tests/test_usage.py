@@ -1,4 +1,5 @@
 """Cost ledger — aggregation and append."""
+
 import json
 from types import SimpleNamespace
 

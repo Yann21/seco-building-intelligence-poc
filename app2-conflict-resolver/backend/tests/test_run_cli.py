@@ -1,4 +1,5 @@
 """The pipeline CLI entry point (offline fast path)."""
+
 from pipeline import run
 
 

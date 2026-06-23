@@ -5,6 +5,7 @@ that cannot be located are flagged (``quote_verified=False``), not discarded:
 a real conflict with a paraphrased citation is still worth surfacing, just with
 a warning. This catches hallucinated citations without throwing away signal.
 """
+
 import unicodedata
 
 from .schema import Conflict

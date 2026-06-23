@@ -1,4 +1,5 @@
 """Ingest stage — PDF discovery and extraction (reads the real corpus, offline)."""
+
 from pipeline.extract import discover_pdfs, get_extracted
 
 
@@ -26,6 +27,7 @@ def test_known_metadata_applied():
 def test_extract_all_reads_pdfs_directly():
     # Exercises the real pdfplumber extraction loop (not the cache).
     from pipeline.extract import extract_all
+
     docs = extract_all()
     assert len(docs) >= 9
     d = docs["ITM-CL-55.2"]

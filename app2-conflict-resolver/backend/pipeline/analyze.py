@@ -11,12 +11,13 @@ rebuild — every other pair is a cache hit. Cross-cluster pairs are never run.
 The robustness layers (Pydantic schema, quote grounding, retry/backoff, prompt
 versioning) live in sibling modules; this file orchestrates them.
 """
+
 import hashlib
 import json
 import os
 import time
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import anthropic
 import json_repair
@@ -84,6 +85,7 @@ Réponds en JSON strict:
 
 # ── Per-pair analysis ─────────────────────────────────────────────────────────
 
+
 def _doc_hash(doc: dict) -> str:
     return hashlib.sha256(doc["full_text"].encode()).hexdigest()[:12]
 
@@ -120,10 +122,10 @@ def run_pair(doc_a: dict, doc_b: dict, client: anthropic.Anthropic, force: bool 
     doc_sections = ""
     for doc in [doc_a, doc_b]:
         doc_sections += (
-            f"\n\n{'='*60}\n"
+            f"\n\n{'=' * 60}\n"
             f"DOCUMENT: {doc['title']}\n"
             f"Autorité: {doc['authority']} | Date: {doc['date']}\n"
-            f"{'='*60}\n\n"
+            f"{'=' * 60}\n\n"
             f"{doc['full_text']}"
         )
 
@@ -143,7 +145,7 @@ def run_pair(doc_a: dict, doc_b: dict, client: anthropic.Anthropic, force: bool 
             break
         except (anthropic.RateLimitError, anthropic.InternalServerError) as e:
             last_err = e
-            wait = 2 ** attempt
+            wait = 2**attempt
             print(f"  retry {attempt + 1}/3 in {wait}s ({e})")
             time.sleep(wait)
 
@@ -168,13 +170,14 @@ def run_pair(doc_a: dict, doc_b: dict, client: anthropic.Anthropic, force: bool 
         "_pair_id": pair_id,
         "_cost_usd": cost,
         "_prompt_version": PROMPT_VERSION,
-        "_cached_at": datetime.now(timezone.utc).isoformat(),
+        "_cached_at": datetime.now(UTC).isoformat(),
     }
     cache_path.write_text(json.dumps(result, ensure_ascii=False, indent=2))
     return result
 
 
 # ── Cluster pairing & merge ───────────────────────────────────────────────────
+
 
 def cluster_pairs(docs: dict) -> list[tuple[dict, dict]]:
     """All (doc_a, doc_b) pairs where both share a cluster.
@@ -211,8 +214,9 @@ def get_analysis(force: bool = False) -> dict:
     if not force and ANALYSIS_CACHE.exists():
         try:
             cached = json.loads(ANALYSIS_CACHE.read_text())
-            if (cached.get("_meta", {}).get("prompt_version") == PROMPT_VERSION
-                    and all_pair_caches_exist(docs)):
+            if cached.get("_meta", {}).get(
+                "prompt_version"
+            ) == PROMPT_VERSION and all_pair_caches_exist(docs):
                 return cached
         except Exception:
             pass
@@ -273,7 +277,7 @@ def get_analysis(force: bool = False) -> dict:
             "prompt_version": PROMPT_VERSION,
             "model": MODEL,
             "total_cost_usd": round(total_cost, 4),
-            "analyzed_at": datetime.now(timezone.utc).isoformat(),
+            "analyzed_at": datetime.now(UTC).isoformat(),
             "quote_verified": len(verified) - unverified_count,
             "quote_unverified": unverified_count,
             "pair_count": len(pairs),

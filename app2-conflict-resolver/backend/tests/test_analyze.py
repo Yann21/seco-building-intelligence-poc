@@ -1,4 +1,5 @@
 """Pairing, hashing, JSON extraction, and the offline merge path."""
+
 from pipeline.analyze import (
     _doc_hash,
     _extract_json_block,

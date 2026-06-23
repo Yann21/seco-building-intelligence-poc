@@ -21,14 +21,16 @@ Ollama setup (if not installed):
     ollama pull phi3.5       # recommended: 3.8B, ~2.5GB, good French instruction following
     ollama pull llama3.2:3b  # alternative: 3B, ~2GB
 """
+
 import argparse
+import contextlib
 import json
 import os
 import sys
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import anthropic
@@ -38,22 +40,32 @@ ROOT = Path(__file__).parent.parent
 load_dotenv(ROOT / ".env")
 sys.path.insert(0, str(ROOT / "app2-conflict-resolver" / "backend"))
 
-from analyze import (
-    SYSTEM_PROMPT, PAIR_PROMPT, MODEL as CLAUDE_MODEL,
-    COST_INPUT_PER_TOKEN, COST_OUTPUT_PER_TOKEN,
-    _pair_cache_path, _extract_json_block, PROMPT_VERSION,
-)
-from extract import get_extracted
+from typing import Literal
 
 import json_repair
+from pipeline.analyze import (
+    PAIR_PROMPT,
+    SYSTEM_PROMPT,
+    _extract_json_block,
+    _pair_cache_path,
+)
+from pipeline.config import (
+    COST_INPUT_PER_TOKEN,
+    COST_OUTPUT_PER_TOKEN,
+    PROMPT_VERSION,
+)
+from pipeline.config import (
+    MODEL as CLAUDE_MODEL,
+)
+from pipeline.extract import get_extracted
 from pydantic import BaseModel, field_validator
-from typing import Literal
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 LOCAL_CACHE_DIR = ROOT / "app2-conflict-resolver" / "backend" / "cache"
 
 
 # ── Shared schema (same as analyze.py) ────────────────────────────────────────
+
 
 class ConflictSource(BaseModel):
     doc_id: str
@@ -82,6 +94,7 @@ class Conflict(BaseModel):
 
 # ── Backend: Claude API ────────────────────────────────────────────────────────
 
+
 def run_claude_pair(doc_a: dict, doc_b: dict, client: anthropic.Anthropic) -> dict:
     """
     Use the warm pair cache if available, otherwise call Claude.
@@ -104,11 +117,16 @@ def run_claude_pair(doc_a: dict, doc_b: dict, client: anthropic.Anthropic) -> di
     prompt = _build_prompt(doc_a, doc_b)
     t0 = time.time()
     msg = client.messages.create(
-        model=CLAUDE_MODEL, max_tokens=4000, system=SYSTEM_PROMPT,
+        model=CLAUDE_MODEL,
+        max_tokens=4000,
+        system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}],
     )
     elapsed = time.time() - t0
-    cost = msg.usage.input_tokens * COST_INPUT_PER_TOKEN + msg.usage.output_tokens * COST_OUTPUT_PER_TOKEN
+    cost = (
+        msg.usage.input_tokens * COST_INPUT_PER_TOKEN
+        + msg.usage.output_tokens * COST_OUTPUT_PER_TOKEN
+    )
     raw = _extract_json_block(msg.content[0].text)
     data = json_repair.repair_json(raw, return_objects=True)
     conflicts = _parse_conflicts(data.get("conflicts", []) if isinstance(data, dict) else [])
@@ -117,13 +135,19 @@ def run_claude_pair(doc_a: dict, doc_b: dict, client: anthropic.Anthropic) -> di
 
 # ── Backend: Ollama local ─────────────────────────────────────────────────────
 
+
 def _local_cache_path(model: str, doc_a: dict, doc_b: dict) -> Path:
     LOCAL_CACHE_DIR.mkdir(exist_ok=True)
     import hashlib
-    key = "_".join(sorted([
-        hashlib.sha256(doc_a["full_text"].encode()).hexdigest()[:12],
-        hashlib.sha256(doc_b["full_text"].encode()).hexdigest()[:12],
-    ]))
+
+    key = "_".join(
+        sorted(
+            [
+                hashlib.sha256(doc_a["full_text"].encode()).hexdigest()[:12],
+                hashlib.sha256(doc_b["full_text"].encode()).hexdigest()[:12],
+            ]
+        )
+    )
     safe_model = model.replace(":", "_").replace("/", "_")
     return LOCAL_CACHE_DIR / f"local_{safe_model}_{key}_{PROMPT_VERSION}.json"
 
@@ -140,7 +164,10 @@ def check_ollama(model: str) -> tuple[bool, str]:
             return False, f"Model '{model}' not pulled. Run: ollama pull {model}"
         return True, f"Model '{model}' ready"
     except urllib.error.URLError:
-        return False, "Ollama not running. Install: curl -fsSL https://ollama.com/install.sh | sh && ollama serve"
+        return (
+            False,
+            "Ollama not running. Install: curl -fsSL https://ollama.com/install.sh | sh && ollama serve",
+        )
     except Exception as e:
         return False, str(e)
 
@@ -162,17 +189,21 @@ def run_ollama_pair(doc_a: dict, doc_b: dict, model: str, max_tokens: int = 4000
     print(f"  [local]  running {model}: {pair_id} (this may take several minutes on CPU)...")
     prompt = _build_prompt(doc_a, doc_b)
 
-    payload = json.dumps({
-        "model": model,
-        "system": SYSTEM_PROMPT,
-        "prompt": prompt,
-        "stream": False,
-        "format": "json",
-        "options": {"temperature": 0.1, "num_predict": max_tokens},
-    }).encode()
+    payload = json.dumps(
+        {
+            "model": model,
+            "system": SYSTEM_PROMPT,
+            "prompt": prompt,
+            "stream": False,
+            "format": "json",
+            "options": {"temperature": 0.1, "num_predict": max_tokens},
+        }
+    ).encode()
 
     t0 = time.time()
-    req = urllib.request.Request(OLLAMA_URL, data=payload, headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(
+        OLLAMA_URL, data=payload, headers={"Content-Type": "application/json"}
+    )
     try:
         with urllib.request.urlopen(req, timeout=900) as resp:
             result = json.loads(resp.read())
@@ -197,18 +228,24 @@ def run_ollama_pair(doc_a: dict, doc_b: dict, model: str, max_tokens: int = 4000
     }
     cache_path.write_text(json.dumps(cache_data, ensure_ascii=False, indent=2))
 
-    return {"conflicts": conflicts, "elapsed_s": elapsed, "tokens_per_sec": tokens_per_sec, "from_cache": False}
+    return {
+        "conflicts": conflicts,
+        "elapsed_s": elapsed,
+        "tokens_per_sec": tokens_per_sec,
+        "from_cache": False,
+    }
 
 
 # ── Shared helpers ─────────────────────────────────────────────────────────────
+
 
 def _build_prompt(doc_a: dict, doc_b: dict) -> str:
     doc_sections = ""
     for doc in [doc_a, doc_b]:
         doc_sections += (
-            f"\n\n{'='*60}\nDOCUMENT: {doc['title']}\n"
+            f"\n\n{'=' * 60}\nDOCUMENT: {doc['title']}\n"
             f"Autorité: {doc['authority']} | Date: {doc['date']}\n"
-            f"{'='*60}\n\n{doc['full_text']}"
+            f"{'=' * 60}\n\n{doc['full_text']}"
         )
     return PAIR_PROMPT.format(doc_sections=doc_sections)
 
@@ -218,14 +255,13 @@ def _parse_conflicts(raw_list: list) -> list[Conflict]:
     for c in raw_list:
         if not isinstance(c, dict):
             continue
-        try:
+        with contextlib.suppress(Exception):
             result.append(Conflict(**c))
-        except Exception:
-            pass
     return result
 
 
 # ── GPU tier projections (T4 / g4dn.xlarge) ───────────────────────────────────
+
 
 def gpu_projections(avg_input_tokens_per_pair: float, n_pairs: int) -> dict:
     """
@@ -233,7 +269,7 @@ def gpu_projections(avg_input_tokens_per_pair: float, n_pairs: int) -> dict:
     Instance: eu-central-1, ~$0.526/hr on-demand, ~$0.158/hr spot.
     Model: Mistral 7B Q4_K_M (4.1 GB VRAM, ~180 tok/sec generation on T4).
     """
-    t4_gen_tok_per_sec = 180       # generation throughput, Mistral 7B Q4_K_M
+    t4_gen_tok_per_sec = 180  # generation throughput, Mistral 7B Q4_K_M
     t4_prefill_tok_per_sec = 4000  # prefill is much faster (memory bandwidth bound)
     output_tokens_per_pair = 4000
 
@@ -243,7 +279,7 @@ def gpu_projections(avg_input_tokens_per_pair: float, n_pairs: int) -> dict:
     inference_s_total = inference_s_per_pair * n_pairs
 
     on_demand_rate = 0.526  # $/hr
-    spot_rate = 0.158       # $/hr (~70% discount, eu-central-1)
+    spot_rate = 0.158  # $/hr (~70% discount, eu-central-1)
 
     cost_on_demand = (inference_s_total / 3600) * on_demand_rate
     cost_spot = (inference_s_total / 3600) * spot_rate
@@ -281,12 +317,20 @@ def _conflict_card_html(c: Conflict | None, side: str, pair_idx: int, conflict_i
     sev_col = _SEV_BADGE.get(c.severity, "#64748b")
     sources_html = "".join(
         f'<div class="src"><code>{s.doc_id}</code> {s.article}'
-        + (f' <em>"{s.quote[:120]}…"</em>' if len(s.quote) > 120 else (f' <em>"{s.quote}"</em>' if s.quote else ""))
-        + (f' → <strong>{s.value}</strong>' if s.value else "")
+        + (
+            f' <em>"{s.quote[:120]}…"</em>'
+            if len(s.quote) > 120
+            else (f' <em>"{s.quote}"</em>' if s.quote else "")
+        )
+        + (f" → <strong>{s.value}</strong>" if s.value else "")
         + "</div>"
         for s in c.sources
     )
-    unverified = "" if c.quote_verified else '<span class="unv" title="Citation non retrouvée dans la source">⚠</span> '
+    unverified = (
+        ""
+        if c.quote_verified
+        else '<span class="unv" title="Citation non retrouvée dans la source">⚠</span> '
+    )
     return f"""
 <div class="conflict-card" id="{cid}" style="border-left:3px solid {sev_col};background:{sev_bg}">
   <div class="card-head">
@@ -320,7 +364,11 @@ def generate_html(
     c_cost = sum(p["claude"]["cost_usd"] for p in pairs)
     c_time = sum(p["claude"]["elapsed_s"] for p in pairs)
     l_time = sum(p["local"]["elapsed_s"] for p in pairs if p["local"])
-    l_speeds = [p["local"]["tokens_per_sec"] for p in pairs if p["local"] and p["local"].get("tokens_per_sec")]
+    l_speeds = [
+        p["local"]["tokens_per_sec"]
+        for p in pairs
+        if p["local"] and p["local"].get("tokens_per_sec")
+    ]
     l_avg_speed = sum(l_speeds) / len(l_speeds) if l_speeds else 0
 
     local_available = any(p["local"] for p in pairs)
@@ -350,20 +398,30 @@ def generate_html(
             lc = local_conflicts[ri] if ri < len(local_conflicts) else None
             rows_html += f"""
       <div class="compare-row">
-        <div class="compare-col">{_conflict_card_html(cc, 'C', pi, ri)}</div>
-        <div class="compare-col">{_conflict_card_html(lc, 'L', pi, ri)}</div>
+        <div class="compare-col">{_conflict_card_html(cc, "C", pi, ri)}</div>
+        <div class="compare-col">{_conflict_card_html(lc, "L", pi, ri)}</div>
       </div>"""
 
-        c_meta = f"{len(claude_conflicts)} conflicts" + (" · from cache" if pair["claude"]["from_cache"] else f" · {pair['claude']['elapsed_s']:.1f}s · ${pair['claude']['cost_usd']:.4f}")
+        c_meta = f"{len(claude_conflicts)} conflicts" + (
+            " · from cache"
+            if pair["claude"]["from_cache"]
+            else f" · {pair['claude']['elapsed_s']:.1f}s · ${pair['claude']['cost_usd']:.4f}"
+        )
         l_meta = (
-            f"{len(local_conflicts)} conflicts" + (" · from cache" if pair["local"]["from_cache"] else f" · {pair['local']['elapsed_s']:.0f}s · {pair['local'].get('tokens_per_sec', 0):.0f} tok/s")
-            if pair["local"] else "not run"
+            f"{len(local_conflicts)} conflicts"
+            + (
+                " · from cache"
+                if pair["local"]["from_cache"]
+                else f" · {pair['local']['elapsed_s']:.0f}s · {pair['local'].get('tokens_per_sec', 0):.0f} tok/s"
+            )
+            if pair["local"]
+            else "not run"
         )
 
         pairs_html += f"""
   <section class="pair-section">
     <div class="pair-header">
-      <h3>Pair {pi+1}: <code>{pair['doc_a']}</code> × <code>{pair['doc_b']}</code></h3>
+      <h3>Pair {pi + 1}: <code>{pair["doc_a"]}</code> × <code>{pair["doc_b"]}</code></h3>
     </div>
     <div class="compare-header">
       <div class="compare-col-head">Tier 1 — Claude {CLAUDE_MODEL} <span class="meta">{c_meta}</span></div>
@@ -374,26 +432,24 @@ def generate_html(
 
     # ── GPU tier section ──
     g = gpu_proj
-    breakeven_analyses = int(g["on_demand_rate"] / (COST_INPUT_PER_TOKEN * 40000 + COST_OUTPUT_PER_TOKEN * 4000 - g["cost_on_demand"] / n_pairs)) if n_pairs else 0
-
     gpu_html = f"""
   <section class="gpu-section">
-    <h2>Tier 3 — GPU Cloud Inference (g4dn.xlarge · {g['gpu']})</h2>
+    <h2>Tier 3 — GPU Cloud Inference (g4dn.xlarge · {g["gpu"]})</h2>
     <p class="gpu-desc">
       Reference infrastructure: AWS <code>g4dn.xlarge</code>, Frankfurt (eu-central-1), configured in
-      <code>interpolate/aws/spin-up.sh</code>. Model: <strong>{g['model']}</strong>
+      <code>interpolate/aws/spin-up.sh</code>. Model: <strong>{g["model"]}</strong>
       (4.1 GB VRAM, leaves ~12 GB headroom on the T4).
     </p>
     <table class="gpu-table">
       <thead><tr><th>Metric</th><th>Value</th><th>Notes</th></tr></thead>
       <tbody>
         <tr><td>Generation throughput</td><td>~180 tok/sec</td><td>Mistral 7B Q4_K_M on T4, memory-bandwidth bound</td></tr>
-        <tr><td>Inference per pair</td><td>~{g['inference_s_per_pair']:.0f}s</td><td>Prefill {round(40000/4000):.0f}s + generate {round(4000/180):.0f}s</td></tr>
-        <tr><td>Full analysis ({n_pairs} pairs)</td><td>~{g['inference_s_total']:.0f}s</td><td>Sequential; parallelisable across pairs</td></tr>
-        <tr><td>Cost on-demand</td><td>${g['cost_on_demand']:.4f}</td><td>${g['on_demand_rate']}/hr × {g['inference_s_total']:.0f}s</td></tr>
-        <tr><td>Cost spot instance</td><td>${g['cost_spot']:.4f}</td><td>${g['spot_rate']}/hr · ~70% discount, interruptible</td></tr>
-        <tr><td>LoRA fine-tuning (100 examples)</td><td>~{g['lora_hours']}h · ${g['lora_cost']:.2f}</td><td>One-time domain adaptation; optional</td></tr>
-        <tr><td>vs. Claude API per analysis</td><td>${c_cost:.3f}</td><td>GPU is {round(c_cost / max(g['cost_on_demand'], 0.0001))}× cheaper per run once instance is running</td></tr>
+        <tr><td>Inference per pair</td><td>~{g["inference_s_per_pair"]:.0f}s</td><td>Prefill {round(40000 / 4000):.0f}s + generate {round(4000 / 180):.0f}s</td></tr>
+        <tr><td>Full analysis ({n_pairs} pairs)</td><td>~{g["inference_s_total"]:.0f}s</td><td>Sequential; parallelisable across pairs</td></tr>
+        <tr><td>Cost on-demand</td><td>${g["cost_on_demand"]:.4f}</td><td>${g["on_demand_rate"]}/hr × {g["inference_s_total"]:.0f}s</td></tr>
+        <tr><td>Cost spot instance</td><td>${g["cost_spot"]:.4f}</td><td>${g["spot_rate"]}/hr · ~70% discount, interruptible</td></tr>
+        <tr><td>LoRA fine-tuning (100 examples)</td><td>~{g["lora_hours"]}h · ${g["lora_cost"]:.2f}</td><td>One-time domain adaptation; optional</td></tr>
+        <tr><td>vs. Claude API per analysis</td><td>${c_cost:.3f}</td><td>GPU is {round(c_cost / max(g["cost_on_demand"], 0.0001))}× cheaper per run once instance is running</td></tr>
       </tbody>
     </table>
     <div class="gpu-note">
@@ -535,11 +591,23 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:11px;color:#
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Run LLM benchmark and generate quality audit HTML")
+    parser = argparse.ArgumentParser(
+        description="Run LLM benchmark and generate quality audit HTML"
+    )
     parser.add_argument("--model", default="phi3.5", help="Ollama model name (default: phi3.5)")
-    parser.add_argument("--skip-local", action="store_true", help="Skip local model, regenerate HTML from Claude cache only")
-    parser.add_argument("--max-tokens", type=int, default=4000, help="Max output tokens for local model (default: 4000; use 800-1000 for fast benchmarks)")
+    parser.add_argument(
+        "--skip-local",
+        action="store_true",
+        help="Skip local model, regenerate HTML from Claude cache only",
+    )
+    parser.add_argument(
+        "--max-tokens",
+        type=int,
+        default=4000,
+        help="Max output tokens for local model (default: 4000; use 800-1000 for fast benchmarks)",
+    )
     parser.add_argument("--output", default=str(ROOT / "documentation" / "llm_benchmark.html"))
     args = parser.parse_args()
 
@@ -568,7 +636,9 @@ def main():
 
             print(f"\nPair: {da['id']} × {db['id']}")
             claude_result = run_claude_pair(da, db, client)
-            total_input_tokens += sum(len(c.title) for c in claude_result["conflicts"])  # rough proxy
+            total_input_tokens += sum(
+                len(c.title) for c in claude_result["conflicts"]
+            )  # rough proxy
 
             local_result = None
             if local_available:
@@ -577,19 +647,21 @@ def main():
                 except RuntimeError as e:
                     print(f"  [local]  failed: {e}")
 
-            pairs.append({
-                "doc_a": da["id"],
-                "doc_b": db["id"],
-                "claude": claude_result,
-                "local": local_result,
-            })
+            pairs.append(
+                {
+                    "doc_a": da["id"],
+                    "doc_b": db["id"],
+                    "claude": claude_result,
+                    "local": local_result,
+                }
+            )
 
     # GPU projections based on measured avg pair size from costing.py
     # Use average of actual pair sizes if available, otherwise estimate
     avg_input_per_pair = 32000  # approximate from count_tokens run
     gpu_proj = gpu_projections(avg_input_per_pair, len(pairs))
 
-    generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    generated_at = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     html = generate_html(doc_list, pairs, args.model, gpu_proj, generated_at)
 
     out = Path(args.output)

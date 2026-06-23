@@ -15,6 +15,7 @@ Output is cached to ``data/extracted.json`` and keyed by document id. The cache
 also stores a ``content_hash`` per document, which is what the analysis stage
 uses to decide whether a pair needs re-running.
 """
+
 import hashlib
 import json
 from pathlib import Path
@@ -44,14 +45,17 @@ def extract_all() -> dict:
     result = {}
     for pdf_path, cluster in discover_pdfs():
         filename = pdf_path.name
-        meta = DOCS_META.get(filename, {
-            "id": pdf_path.stem,
-            "title": pdf_path.stem.replace("-", " "),
-            "authority": "Unknown",
-            "date": "Unknown",
-            "scope": "",
-            "url": "",
-        })
+        meta = DOCS_META.get(
+            filename,
+            {
+                "id": pdf_path.stem,
+                "title": pdf_path.stem.replace("-", " "),
+                "authority": "Unknown",
+                "date": "Unknown",
+                "scope": "",
+                "url": "",
+            },
+        )
         pages = []
         with pdfplumber.open(pdf_path) as pdf:
             for i, page in enumerate(pdf.pages):
