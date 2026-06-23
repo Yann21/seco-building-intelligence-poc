@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: app2 analyze eval doc explore deploy deploy-doc help
+.PHONY: app2 analyze eval test doc explore deploy deploy-doc help
 
 BACKEND  = app2-conflict-resolver/backend
 FRONTEND = app2-conflict-resolver/frontend
@@ -22,6 +22,11 @@ analyze: ## Rebuild conflict analysis from PDFs (python -m pipeline.run [ARGS=--
 
 eval: ## Run the golden-set regression eval against the current analysis
 	@cd $(BACKEND) && python -m eval.run_eval
+
+test: ## Run backend test suite with coverage → documentation/coverage.json
+	@cd $(BACKEND) && python -m pytest --cov=pipeline --cov=main \
+	  --cov-report=term-missing \
+	  --cov-report=json:$(CURDIR)/documentation/coverage.json
 
 doc: ## Start documentation server at http://localhost:8889
 	@cd $(BACKEND) && python ../../documentation/serve.py --port 8889

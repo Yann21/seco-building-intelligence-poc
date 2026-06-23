@@ -6,6 +6,8 @@ assignment.txt
 __pycache__/
 *.pyc
 .venv/
+.coverage
+.pytest_cache/
 
 # Node
 node_modules/

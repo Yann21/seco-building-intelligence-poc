@@ -3,6 +3,7 @@ import json
 import os
 import sys
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -85,7 +86,7 @@ def resolve_conflict(payload: ResolutionPayload):
     resolutions[payload.conflict_id] = {
         "decision": payload.decision,
         "resolved_by": payload.resolved_by,
-        "resolved_at": __import__("datetime").datetime.utcnow().isoformat(),
+        "resolved_at": datetime.now(timezone.utc).isoformat(),
     }
     save_resolutions(resolutions)
     return {"status": "saved", "conflict_id": payload.conflict_id}
