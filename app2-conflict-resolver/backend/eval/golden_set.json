@@ -1,0 +1,46 @@
+{
+  "description": "Regression gold set for the lighting cluster. Each entry is a real, high-confidence conflict a human verified in the source PDFs. The eval asserts the pipeline keeps detecting each one (correct document pair, enough characteristic keywords, severity at least the floor). Keywords are accent-insensitive substring checks. Tune/extend as the corpus grows.",
+  "severity_order": ["mineur", "majeur", "critique"],
+  "cases": [
+    {
+      "name": "maintenance-frequency-emergency-lighting",
+      "pair": ["ITM-CL-55.2", "ITM-ET-32.10"],
+      "min_severity": "majeur",
+      "keywords": ["essai", "inspection", "3 mois", "6 mois", "12 mois"],
+      "min_keyword_hits": 3,
+      "note": "Flagship conflict (README intro): emergency-lighting test/inspection cadence — 3/6 months vs 6/12 months."
+    },
+    {
+      "name": "emergency-power-source-chantier-vs-general",
+      "pair": ["ITM-CL-144.1", "ITM-ET-32.10"],
+      "min_severity": "majeur",
+      "keywords": ["bloc autonome", "blocs autonomes", "source centrale", "groupe electrogene", "onduleur"],
+      "min_keyword_hits": 2,
+      "note": "Emergency-lighting power source: self-contained units mandatory (chantier) vs central source allowed (general)."
+    },
+    {
+      "name": "interior-circulation-illuminance",
+      "pair": ["ITM-CL-144.1", "ITM-ET-32.10"],
+      "min_severity": "majeur",
+      "keywords": ["10 lux", "50 lux", "100 lux", "circulation", "interieur"],
+      "min_keyword_hits": 2,
+      "note": "Indoor circulation illuminance: 10 lux (chantier) vs 50/100 lux (general)."
+    },
+    {
+      "name": "exterior-circulation-illuminance",
+      "pair": ["ITM-CL-144.1", "ITM-ET-32.10"],
+      "min_severity": "mineur",
+      "keywords": ["10 lux", "20 lux", "exterieur", "circulation"],
+      "min_keyword_hits": 2,
+      "note": "Outdoor circulation illuminance: 10 lux (chantier) vs 20 lux (general)."
+    },
+    {
+      "name": "emergency-power-source-chantier-vs-workplace",
+      "pair": ["ITM-CL-144.1", "ITM-CL-55.2"],
+      "min_severity": "majeur",
+      "keywords": ["bloc autonome", "blocs autonomes", "groupe electrogene", "onduleur", "source"],
+      "min_keyword_hits": 2,
+      "note": "Same power-source contradiction surfaced against the workplace lighting baseline."
+    }
+  ]
+}
