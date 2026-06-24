@@ -1,14 +1,13 @@
 # Building Intelligence PoC — SECO
 
-Three apps demonstrating AI-augmented regulatory intelligence for Luxembourg construction inspections.
+Two apps demonstrating AI-augmented regulatory intelligence for Luxembourg construction inspections.
 
 | | App | Live |
 |---|---|---|
 | 🗺️ | **App 1 — PAG Zone Map** — click a parcel, get applicable zoning rules and SECO control points | [yannhoffmann.com/seco1](https://yannhoffmann.com/seco1) |
 | ⚡ | **App 2 — Conflict Resolver** — AI detects contradictions between ITM regulations, with citations and expert resolution workflow | [yannhoffmann.com/seco2](https://yannhoffmann.com/seco2) |
-| 🔍 | **App 3 — ITM Corpus Explorer** — semantic map of 454 ITM documents (UMAP + sortable inventory + OCR backlog) | [yannhoffmann.com/secodoc/explorer.html](https://yannhoffmann.com/secodoc/explorer.html) |
 
-**Technical docs** (costing analysis · LLM benchmark · test coverage): [yannhoffmann.com/secodoc](https://yannhoffmann.com/secodoc)
+**Technical docs** (ITM Corpus Explorer · costing analysis · LLM benchmark · test coverage): [yannhoffmann.com/secodoc](https://yannhoffmann.com/secodoc)
 
 **Run locally:** `make app2` · `make test` · `make eval`
 
@@ -20,7 +19,7 @@ Three apps demonstrating AI-augmented regulatory intelligence for Luxembourg con
 - [🗺️ Regulatory scope — what this PoC covers and what it doesn't](#regulatory-scope-what-this-poc-covers-and-what-it-doesnt)
 - [🎯 Why is this relevant to SECO?](#why-is-this-relevant-to-seco)
 - [📂 Data sources](#data-sources)
-- [🔍 App 3 — ITM Corpus Explorer](#app-3-itm-corpus-explorer)
+- [🔍 ITM Corpus Explorer](#itm-corpus-explorer)
 - [⚙️ Technical decisions and trade-offs](#technical-decisions-and-trade-offs)
   - [🔗 App 2 architecture: pairwise document index](#app-2-architecture-pairwise-document-index)
   - [🧱 Pipeline structure & data flow](#pipeline-structure-data-flow)
@@ -42,7 +41,7 @@ Construction projects in Luxembourg touch a web of overlapping regulatory texts 
 
 **App 1 — PAG Zone Map** addresses a related pain: understanding what's allowed on a given parcel before even starting design. It maps the full PAG zoning of Luxembourg and surfaces the applicable rules, required documents, and SECO control points on a single click.
 
-**App 3 — ITM Corpus Explorer** answers the question App 2 raises next: *which documents should we be comparing?* It scrapes the entire ITM corpus, embeds every text-extractable document, and lays it out as a semantic map — so the conflict clusters App 2 runs on are chosen from evidence, not guesswork. It also quantifies what's *not* yet machine-readable (the OCR backlog), which is itself a finding.
+The **ITM Corpus Explorer** (in the technical docs) answers the question App 2 raises next: *which documents should we be comparing?* It scrapes the entire ITM corpus, embeds every text-extractable document, and lays it out as a semantic map — so the conflict clusters App 2 runs on are chosen from evidence, not guesswork. It also quantifies what's *not* yet machine-readable (the OCR backlog), which is itself a finding.
 
 ---
 
@@ -75,16 +74,16 @@ SECO's core value is independent technical control. A conflict between two regul
 
 | Source | Used in | Why |
 |---|---|---|
-| 9 ITM PDFs across 3 clusters — lighting (CL-55.2, ET-32.10, CL-144.1), ventilation (CL-53.1, CL-62.1, CL-86.1), ascenseurs (CL-82.1, CL-83.1, CL-230.2) — (public ITM website) | App 2 | Three topic clusters with known intra-cluster overlaps; picked from App 3's corpus map, not guesswork |
+| 9 ITM PDFs across 3 clusters — lighting (CL-55.2, ET-32.10, CL-144.1), ventilation (CL-53.1, CL-62.1, CL-86.1), ascenseurs (CL-82.1, CL-83.1, CL-230.2) — (public ITM website) | App 2 | Three topic clusters with known intra-cluster overlaps; picked from the corpus map, not guesswork |
 | PAG Zonage + NQ-PAP (GeoJSON, geoportail.lu open data) | App 1 | Official national zoning dataset, refreshed by communes; the only authoritative source for parcel classification |
 | RGD 28 juillet 2011 (zone rules, coded manually) | App 1 | The grand-ducal regulation defining zone types; static enough to encode as a lookup table for the PoC |
-| Full ITM corpus — 454 ITM-CL/ET/SST PDFs (scraped from itm.public.lu) | App 3 | The complete public ITM prescription set; used to map the corpus and pick conflict clusters from evidence |
+| Full ITM corpus — 454 ITM-CL/ET/SST PDFs (scraped from itm.public.lu) | ITM Explorer | The complete public ITM prescription set; used to map the corpus and pick conflict clusters from evidence |
 
 ---
 
-## App 3 — ITM Corpus Explorer
+## ITM Corpus Explorer
 
-App 2 demonstrates conflict detection on hand-picked clusters. The obvious next question — *which clusters are worth running?* — needs a view of the whole corpus. App 3 builds it: a cached pipeline that scrapes itm.public.lu, downloads every French ITM-CL/ET/SST PDF, extracts text with pdfplumber, derives a short title per document via an LLM, embeds with OpenAI `text-embedding-3-small`, reduces to 2D with UMAP, and renders an interactive `report.html` (Plotly semantic map + a stacked documents-per-year histogram + sortable inventories).
+App 2 demonstrates conflict detection on hand-picked clusters. The obvious next question — *which clusters are worth running?* — needs a view of the whole corpus. The [ITM Explorer page](https://yannhoffmann.com/secodoc/explorer.html) in the technical docs builds it: a cached pipeline that scrapes itm.public.lu, downloads every French ITM-CL/ET/SST PDF, extracts text with pdfplumber, derives a short title per document via an LLM, embeds with OpenAI `text-embedding-3-small`, reduces to 2D with UMAP, and renders an interactive report (Plotly semantic map + a stacked documents-per-year histogram + sortable inventories).
 
 **The corpus, quantified:**
 
@@ -246,7 +245,7 @@ Three months of work: structured document ingest pipeline (OCR + chunking), Post
 
 The core value proposition depends on the corpus staying current — a conflict resolver running on outdated regulations gives wrong answers confidently. This needs two things:
 
-1. **Version detection**: each document in `pipeline/docs_meta.py` carries a `date` field, but there is no mechanism to detect when ITM publishes an updated version. The right approach is a periodic crawler against the ITM public document URLs (already stored in `DOCS_META`) that compares the remote file hash against the cached `content_hash`. A change triggers re-extraction and invalidates all pair caches for that document's cluster — and App 3 already shows where to point it first (the legacy CL/ET series).
+1. **Version detection**: each document in `pipeline/docs_meta.py` carries a `date` field, but there is no mechanism to detect when ITM publishes an updated version. The right approach is a periodic crawler against the ITM public document URLs (already stored in `DOCS_META`) that compares the remote file hash against the cached `content_hash`. A change triggers re-extraction and invalidates all pair caches for that document's cluster — and the corpus map already shows where to point it first (the legacy CL/ET series).
 
 2. **Freshness surface**: the UI should show document dates and flag documents older than a configurable threshold (e.g. >2 years without a known update). This gives inspectors a signal that the conflict analysis may be based on superseded text — especially important for chantier regulations which are revised more frequently than general prescriptions.
 
