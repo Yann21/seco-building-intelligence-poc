@@ -1,8 +1,8 @@
-# Building Intelligence PoC — SECO
+# Conflict Resolver Precedent Database
 
-**Live demo — Regulatory Conflict Resolver:** [yannhoffmann.com/seco2](https://yannhoffmann.com/seco2) — AI detects contradictions between ITM regulations, with citations and expert resolution workflow
+**Live demo:** [yannhoffmann.com/seco2](https://yannhoffmann.com/seco2) — AI detects contradictions between ITM regulations, with citations and expert resolution workflow
 
-**Technical docs** (ITM Corpus Explorer · costing analysis · LLM benchmark · test coverage): [yannhoffmann.com/secodoc](https://yannhoffmann.com/secodoc)
+**Technical docs:** (ITM Corpus Explorer · costing analysis · LLM benchmark · test coverage): [yannhoffmann.com/secodoc](https://yannhoffmann.com/secodoc)
 
 **Run locally:** `make app2` · `make test` · `make eval`
 
@@ -10,29 +10,31 @@
 
 ## Table of contents
 
-- [🏗️ What problem, for whom?](#what-problem-for-whom)
+- [🏗️ What problem, for who?](#what-problem-for-whom)
 - [🗺️ Regulatory scope — what this PoC covers and what it doesn't](#regulatory-scope-what-this-poc-covers-and-what-it-doesnt)
 - [🎯 Why is this relevant to SECO?](#why-is-this-relevant-to-seco)
 - [📂 Data sources](#data-sources)
 - [🔍 ITM Corpus Explorer](#itm-corpus-explorer)
 - [⚙️ Technical decisions and trade-offs](#technical-decisions-and-trade-offs)
-  - [🔗 Conflict Resolver architecture: pairwise document index](#conflict-resolver-architecture-pairwise-document-index)
-  - [🧱 Pipeline structure & data flow](#pipeline-structure-data-flow)
-  - [🛡️ AI robustness stack](#ai-robustness-stack)
-  - [🎯 Evaluating detection quality (golden set)](#evaluating-detection-quality-golden-set)
-  - [🧪 Code quality & test coverage](#code-quality-test-coverage)
-  - [🔒 Data confidentiality and LLM deployment tiers](#data-confidentiality-and-llm-deployment-tiers)
-  - [💰 API dependency and cost model](#api-dependency-and-cost-model)
+    - [🔗 Conflict Resolver architecture: pairwise document index](#conflict-resolver-architecture-pairwise-document-index)
+    - [🧱 Pipeline structure & data flow](#pipeline-structure-data-flow)
+    - [🛡️ AI robustness stack](#ai-robustness-stack)
+    - [🎯 Evaluating detection quality (golden set)](#evaluating-detection-quality-golden-set)
+    - [🧪 Code quality & test coverage](#code-quality-test-coverage)
+    - [🔒 Data confidentiality and LLM deployment tiers](#data-confidentiality-and-llm-deployment-tiers)
+    - [💰 API dependency and cost model](#api-dependency-and-cost-model)
 - [🚀 What goes to production tomorrow vs. what gets thrown away](#what-goes-to-production-tomorrow-vs-what-gets-thrown-away)
 - [🔭 3-month vision](#3-month-vision)
 
 ---
 
-## What problem, for whom?
+## What problem, for who?
 
-Construction projects in Luxembourg touch a web of overlapping regulatory texts — ITM workplace safety prescriptions, PAG urban planning rules, European norms, communal supplements. These documents were written by different authorities at different dates and are never cross-referenced. When values contradict (e.g. emergency lighting test frequency: 3 months in one text, 6 months in another), the architect or site engineer has no systematic way to know, and defaults to the wrong one.
+Construction projects in Luxembourg touch a web of overlapping regulatory texts — ITM workplace safety prescriptions, PAG urban planning rules, European norms, communal supplements. These documents were written by different authorities at different dates and are never cross-referenced. When values contradict (e.g. emergency lighting test frequency: 3 months in one text, 6 months in another), neither the architect designing the building nor the inspector reviewing it has a systematic way to know — both default to the wrong one, and both carry the liability.
 
-**The Regulatory Conflict Resolver** surfaces those contradictions automatically. The target user is a SECO inspector or an architect preparing a building permit dossier: someone who needs to know *which value to apply* when two binding texts disagree.
+**The Regulatory Conflict Resolver** surfaces those contradictions automatically. The architect gets an answer at design time, before submitting a dossier that will get rejected. The SECO inspector gets the same view when reviewing a project, with a workflow to document their resolution. That documentation is the longer-term product: a **vetted precedent database**, built from real decisions by domain experts, that future architects and inspectors can query instead of re-litigating the same ambiguity from scratch.
+
+The vetting step is what makes it reliable. The AI flags conflicts and proposes the most restrictive interpretation; a domain expert reviews and documents the final call. Only that reviewed resolution enters the precedent base. The system gets more useful with every decision recorded.
 
 The **ITM Corpus Explorer** (in the technical docs) answers the question the resolver raises next: *which documents should we be comparing?* It scrapes the entire ITM corpus, embeds every text-extractable document, and lays it out as a semantic map — so the conflict clusters the resolver runs on are chosen from evidence, not guesswork. It also quantifies what's *not* yet machine-readable (the OCR backlog), which is itself a finding.
 
