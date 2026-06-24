@@ -48,7 +48,7 @@ A commercial building project in Luxembourg touches at least four distinct regul
 |---|---|---|---|
 | European | CEN (Eurocodes), EU directives | Structural design, machinery, equipment (elevators → directive 95/16/CE) | Design |
 | National | Grand-ducal regulations, ministerial arrêtés | Implementation of EU directives, national safety standards | Design / permit |
-| Regulatory bodies | **ITM** (workplace safety), **CGDIS** (fire safety), Administration des Bâtiments Publics | Operational prescriptions, periodic inspections, authorisations | Construction / operation |
+| Regulatory bodies | **ITM** (workplace safety), **CGDIS** (fire safety), Administration des Bâtiments Publics | Operational prescriptions, periodic inspections, authorizations | Construction / operation |
 | Municipal | Commune, PAG, PAP, communal supplements | Zoning, land use, urban form | Permit |
 
 These layers are never cross-referenced in a single document. An architect must navigate all of them simultaneously, and conflicts exist not just *within* a layer but *across* layers — a corridor width compliant under Eurocode structural loads may still violate an ITM evacuation prescription.
@@ -92,7 +92,7 @@ App 2 demonstrates conflict detection on hand-picked clusters. The obvious next 
 
 1. **Three series, two eras.** ITM-CL (Conditions-types, per-equipment, ~1990–2016) and ITM-ET (Établissements-types, per-building-type, ~1991–2005) are the **legacy** series; ITM-SST (Sécurité-Santé au Travail, ~2007–2025) is the **modern unified** series absorbing both. The year histogram shows the handover directly (CL/ET bars give way to SST around 2010). This is the strongest argument yet for App 2's version-tracking: a 1990s CL prescription may be silently superseded by a recent SST text.
 
-2. **The OCR gap is concentrated in the legacy series.** Of the 128 scanned documents, **101 are CL, 14 ET, 13 SST** — ~90% are the old CL/ET texts (over half the ET series is un-digitised), versus only 8% of the modern SST series. The gap isn't random; it sits exactly where the supersession risk is highest. That makes OCR a prioritised backlog, not a uniform chore.
+2. **The OCR gap is concentrated in the legacy series.** Of the 128 scanned documents, **101 are CL, 14 ET, 13 SST** — ~90% are the old CL/ET texts (over half the ET series is un-digitized), versus only 8% of the modern SST series. The gap isn't random; it sits exactly where the supersession risk is highest. That makes OCR a prioritized backlog, not a uniform chore.
 
 **Known limitation (documented in the report):** embeddings use each document's first ~8 000 characters (≈2 000 tokens), so a long document's position reflects its opening, not its full content. The production fix is chunk-and-average; called out rather than hidden.
 

@@ -1,4 +1,4 @@
-"""Stage 1 — ingest: PDFs organised into topic clusters → structured text.
+"""Stage 1 — ingest: PDFs organized into topic clusters → structured text.
 
     documents/
       lighting/          ← cluster name (immediate subfolder)

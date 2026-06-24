@@ -586,7 +586,7 @@ def main():
     for i in range(len(doc_list)):
         for j in range(i + 1, len(doc_list)):
             da, db = doc_list[i], doc_list[j]
-            # Only measure intra-cluster pairs (mirrors analyze.py behaviour)
+            # Only measure intra-cluster pairs (mirrors analyze.py behavior)
             if da.get("cluster") != db.get("cluster"):
                 continue
             print(f"  {da['id']} × {db['id']}...")

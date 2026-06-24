@@ -154,14 +154,14 @@ def coverage_html(navbar: str) -> str:
     totals = data["totals"]
     total = totals["percent_covered"]
 
-    def colour(pct):
+    def color(pct):
         return "#10b981" if pct >= 90 else "#f59e0b" if pct >= 70 else "#ef4444"
 
     def bar(pct):
         return (
             f'<span style="background:#f1f5f9;border-radius:4px;height:8px;width:120px;'
             f'overflow:hidden;display:inline-block;vertical-align:middle">'
-            f'<span style="background:{colour(pct)};height:8px;width:{pct:.0f}%;'
+            f'<span style="background:{color(pct)};height:8px;width:{pct:.0f}%;'
             f'display:inline-block;vertical-align:top"></span></span>'
         )
 
@@ -184,7 +184,7 @@ def coverage_html(navbar: str) -> str:
 <em>output</em> level by the golden-set eval (<code>make eval</code>) instead of mocked here.</p>
 <div style="display:flex;align-items:center;gap:24px;margin:24px 0;padding:20px 24px;
      background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px">
-  <div style="font-size:46px;font-weight:800;color:{colour(total)};font-variant-numeric:tabular-nums">{total:.0f}%</div>
+  <div style="font-size:46px;font-weight:800;color:{color(total)};font-variant-numeric:tabular-nums">{total:.0f}%</div>
   <div style="font-size:13px;color:#475569">
     <strong>line coverage</strong> · {totals["num_statements"]} statements<br>
     {totals["covered_lines"]} covered · {totals["missing_lines"]} uncovered
