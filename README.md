@@ -16,7 +16,7 @@
 - [📂 Data sources](#data-sources)
 - [🔍 ITM Corpus Explorer](#itm-corpus-explorer)
 - [⚙️ Technical decisions and trade-offs](#technical-decisions-and-trade-offs)
-  - [🔗 App 2 architecture: pairwise document index](#app-2-architecture-pairwise-document-index)
+  - [🔗 Conflict Resolver architecture: pairwise document index](#conflict-resolver-architecture-pairwise-document-index)
   - [🧱 Pipeline structure & data flow](#pipeline-structure-data-flow)
   - [🛡️ AI robustness stack](#ai-robustness-stack)
   - [🎯 Evaluating detection quality (golden set)](#evaluating-detection-quality-golden-set)
@@ -69,7 +69,7 @@ SECO's core value is independent technical control. A conflict between two regul
 
 | Source | Used in | Why |
 |---|---|---|
-| 9 ITM PDFs across 3 clusters — lighting (CL-55.2, ET-32.10, CL-144.1), ventilation (CL-53.1, CL-62.1, CL-86.1), ascenseurs (CL-82.1, CL-83.1, CL-230.2) — (public ITM website) | App 2 | Three topic clusters with known intra-cluster overlaps; picked from the corpus map, not guesswork |
+| 9 ITM PDFs across 3 clusters — lighting (CL-55.2, ET-32.10, CL-144.1), ventilation (CL-53.1, CL-62.1, CL-86.1), ascenseurs (CL-82.1, CL-83.1, CL-230.2) — (public ITM website) | Conflict Resolver | Three topic clusters with known intra-cluster overlaps; picked from the corpus map, not guesswork |
 | PAG Zonage + NQ-PAP (GeoJSON, geoportail.lu open data) | App 1 | Official national zoning dataset, refreshed by communes; the only authoritative source for parcel classification |
 | RGD 28 juillet 2011 (zone rules, coded manually) | App 1 | The grand-ducal regulation defining zone types; static enough to encode as a lookup table for the PoC |
 | Full ITM corpus — 454 ITM-CL/ET/SST PDFs (scraped from itm.public.lu) | ITM Explorer | The complete public ITM prescription set; used to map the corpus and pick conflict clusters from evidence |
@@ -78,7 +78,7 @@ SECO's core value is independent technical control. A conflict between two regul
 
 ## ITM Corpus Explorer
 
-App 2 demonstrates conflict detection on hand-picked clusters. The obvious next question — *which clusters are worth running?* — needs a view of the whole corpus. The [ITM Explorer page](https://yannhoffmann.com/secodoc/explorer.html) in the technical docs builds it: a cached pipeline that scrapes itm.public.lu, downloads every French ITM-CL/ET/SST PDF, extracts text with pdfplumber, derives a short title per document via an LLM, embeds with OpenAI `text-embedding-3-small`, reduces to 2D with UMAP, and renders an interactive report (Plotly semantic map + a stacked documents-per-year histogram + sortable inventories).
+The Conflict Resolver demonstrates conflict detection on hand-picked clusters. The obvious next question — *which clusters are worth running?* — needs a view of the whole corpus. The [ITM Explorer page](https://yannhoffmann.com/secodoc/explorer.html) in the technical docs builds it: a cached pipeline that scrapes itm.public.lu, downloads every French ITM-CL/ET/SST PDF, extracts text with pdfplumber, derives a short title per document via an LLM, embeds with OpenAI `text-embedding-3-small`, reduces to 2D with UMAP, and renders an interactive report (Plotly semantic map + a stacked documents-per-year histogram + sortable inventories).
 
 **The corpus, quantified:**
 
@@ -88,9 +88,9 @@ App 2 demonstrates conflict detection on hand-picked clusters. The obvious next 
 | Text-extractable → mapped | **326** | Embedded + positioned on the semantic map |
 | Scanned (OCR backlog) | **128 (28%)** | No text layer — excluded from the map, listed separately |
 
-**Two findings that feed straight back into App 2:**
+**Two findings that feed straight back into the Conflict Resolver:**
 
-1. **Three series, two eras.** ITM-CL (Conditions-types, per-equipment, ~1990–2016) and ITM-ET (Établissements-types, per-building-type, ~1991–2005) are the **legacy** series; ITM-SST (Sécurité-Santé au Travail, ~2007–2025) is the **modern unified** series absorbing both. The year histogram shows the handover directly (CL/ET bars give way to SST around 2010). This is the strongest argument yet for App 2's version-tracking: a 1990s CL prescription may be silently superseded by a recent SST text.
+1. **Three series, two eras.** ITM-CL (Conditions-types, per-equipment, ~1990–2016) and ITM-ET (Établissements-types, per-building-type, ~1991–2005) are the **legacy** series; ITM-SST (Sécurité-Santé au Travail, ~2007–2025) is the **modern unified** series absorbing both. The year histogram shows the handover directly (CL/ET bars give way to SST around 2010). This is the strongest argument yet for the Conflict Resolver's version-tracking: a 1990s CL prescription may be silently superseded by a recent SST text.
 
 2. **The OCR gap is concentrated in the legacy series.** Of the 128 scanned documents, **101 are CL, 14 ET, 13 SST** — ~90% are the old CL/ET texts (over half the ET series is un-digitized), versus only 8% of the modern SST series. The gap isn't random; it sits exactly where the supersession risk is highest. That makes OCR a prioritized backlog, not a uniform chore.
 
@@ -100,7 +100,7 @@ App 2 demonstrates conflict detection on hand-picked clusters. The obvious next 
 
 ## Technical decisions and trade-offs
 
-### App 2 architecture: pairwise document index
+### Conflict Resolver architecture: pairwise document index
 
 The naive approach — dump all documents into one prompt — works for a handful of texts but breaks at scale: context grows as O(n), cost grows as O(n), and a single API failure invalidates everything.
 
