@@ -32,7 +32,7 @@ ignore = ["E501"]
 [tool.ruff.lint.per-file-ignores]
 # These modules bootstrap sys.path (to import the backend from a script context)
 # before importing project code — the late imports are deliberate, not a smell.
-"app2-conflict-resolver/backend/main.py" = ["E402"]
+"conflict-resolver/backend/main.py" = ["E402"]
 "documentation/costing.py" = ["E402"]
 "documentation/llm_benchmark.py" = ["E402"]
 # explore.py: C408 = Plotly's idiomatic dict(...) kwargs; SIM102 = the

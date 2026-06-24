@@ -61,7 +61,7 @@ thead tr:last-child th{font-size:10px;padding:4px 10px;border-bottom:2px solid #
 <header>
   <h1>SECO — API Costing Report</h1>
   <p>
-    Generated: 2026-06-22 10:13 UTC &nbsp;·&nbsp;
+    Generated: 2026-06-24 11:10 UTC &nbsp;·&nbsp;
     Model: <code>claude-sonnet-4-6</code> &nbsp;·&nbsp;
     Input: <code>$3 / MTok</code> &nbsp;·&nbsp;
     Output: <code>$15 / MTok</code>
@@ -70,10 +70,10 @@ thead tr:last-child th{font-size:10px;padding:4px 10px;border-bottom:2px solid #
 <main>
   
     <div class="metrics">
-      <div class="mc"><div class="ml">Documents</div><div class="mv">3</div><div class="ms">3-doc cluster · 3 pairs</div></div>
-      <div class="mc"><div class="ml">Total input tokens</div><div class="mv">97,196</div><div class="ms">exact · count_tokens API</div></div>
-      <div class="mc"><div class="ml">Output tokens (est.)</div><div class="mv">12,000</div><div class="ms">4,000 / pair · conservative</div></div>
-      <div class="mc"><div class="ml">Baseline cost</div><div class="mv">$0.4716</div><div class="ms">$0.00 on warm restart</div></div>
+      <div class="mc"><div class="ml">Documents</div><div class="mv">9</div><div class="ms">3-doc cluster · 9 pairs</div></div>
+      <div class="mc"><div class="ml">Total input tokens</div><div class="mv">151,776</div><div class="ms">exact · count_tokens API</div></div>
+      <div class="mc"><div class="ml">Output tokens (est.)</div><div class="mv">36,000</div><div class="ms">4,000 / pair · conservative</div></div>
+      <div class="mc"><div class="ml">Baseline cost</div><div class="mv">$0.9953</div><div class="ms">$0.00 on warm restart</div></div>
     </div>
 
   <section>
@@ -83,6 +83,30 @@ thead tr:last-child th{font-size:10px;padding:4px 10px;border-bottom:2px solid #
         <tr><th>ID</th><th>Title</th><th>Authority</th><th>Cluster</th><th>Pages</th><th>Words</th></tr>
       </thead>
       <tbody>
+        <tr>
+          <td><code>ITM-CL-230.2</code></td>
+          <td>ITM-CL 230.2 – Ascenseurs (directive 95/16/CE)</td>
+          <td class="num">ITM</td>
+          <td class="num"><span class="cluster-tag">ascenseurs</span></td>
+          <td class="num">10</td>
+          <td class="num">2,166</td>
+        </tr>
+        <tr>
+          <td><code>ITM-CL-82.1</code></td>
+          <td>ITM-CL 82.1 – Mise en sécurité des ascenseurs mus électriquement</td>
+          <td class="num">ITM</td>
+          <td class="num"><span class="cluster-tag">ascenseurs</span></td>
+          <td class="num">9</td>
+          <td class="num">2,958</td>
+        </tr>
+        <tr>
+          <td><code>ITM-CL-83.1</code></td>
+          <td>ITM-CL 83.1 – Mise en sécurité des ascenseurs mus hydrauliquement</td>
+          <td class="num">ITM</td>
+          <td class="num"><span class="cluster-tag">ascenseurs</span></td>
+          <td class="num">9</td>
+          <td class="num">2,713</td>
+        </tr>
         <tr>
           <td><code>ITM-CL-144.1</code></td>
           <td>ITM-CL 144.1 – Installations électriques de chantier (Art. 7 Éclairage)</td>
@@ -106,6 +130,30 @@ thead tr:last-child th{font-size:10px;padding:4px 10px;border-bottom:2px solid #
           <td class="num"><span class="cluster-tag">lighting</span></td>
           <td class="num">41</td>
           <td class="num">13,682</td>
+        </tr>
+        <tr>
+          <td><code>ITM-CL-53.1</code></td>
+          <td>ITM-CL 53.1 – Installations de ventilation et de conditionnement d'air</td>
+          <td class="num">ITM</td>
+          <td class="num"><span class="cluster-tag">ventilation</span></td>
+          <td class="num">8</td>
+          <td class="num">2,586</td>
+        </tr>
+        <tr>
+          <td><code>ITM-CL-62.1</code></td>
+          <td>ITM-CL 62.1 – Ventilation, aération, chauffage et atmosphère des lieux de travail (petits ateliers)</td>
+          <td class="num">ITM</td>
+          <td class="num"><span class="cluster-tag">ventilation</span></td>
+          <td class="num">3</td>
+          <td class="num">802</td>
+        </tr>
+        <tr>
+          <td><code>ITM-CL-86.1</code></td>
+          <td>ITM-CL 86.1 – Contrôle de l'atmosphère sur les lieux de travail</td>
+          <td class="num">ITM</td>
+          <td class="num"><span class="cluster-tag">ventilation</span></td>
+          <td class="num">3</td>
+          <td class="num">718</td>
         </tr></tbody>
     </table>
     <div class="note">
@@ -128,6 +176,33 @@ thead tr:last-child th{font-size:10px;padding:4px 10px;border-bottom:2px solid #
         </tr>
       </thead>
       <tbody>
+        <tr>
+          <td><code>ITM-CL-230.2</code> × <code>ITM-CL-82.1</code>
+            <span class="cluster-tag" style="margin-left:6px">ascenseurs</span></td>
+          <td class="num">578</td>
+          <td class="num">11,066</td>
+          <td class="num"><strong>11,644</strong></td>
+          <td class="num">4,000 <span class="est">est.</span></td>
+          <td class="num cost">$0.0949</td>
+        </tr>
+        <tr>
+          <td><code>ITM-CL-230.2</code> × <code>ITM-CL-83.1</code>
+            <span class="cluster-tag" style="margin-left:6px">ascenseurs</span></td>
+          <td class="num">578</td>
+          <td class="num">10,573</td>
+          <td class="num"><strong>11,151</strong></td>
+          <td class="num">4,000 <span class="est">est.</span></td>
+          <td class="num cost">$0.0935</td>
+        </tr>
+        <tr>
+          <td><code>ITM-CL-82.1</code> × <code>ITM-CL-83.1</code>
+            <span class="cluster-tag" style="margin-left:6px">ascenseurs</span></td>
+          <td class="num">578</td>
+          <td class="num">12,043</td>
+          <td class="num"><strong>12,621</strong></td>
+          <td class="num">4,000 <span class="est">est.</span></td>
+          <td class="num cost">$0.0979</td>
+        </tr>
         <tr>
           <td><code>ITM-CL-144.1</code> × <code>ITM-CL-55.2</code>
             <span class="cluster-tag" style="margin-left:6px">lighting</span></td>
@@ -154,15 +229,42 @@ thead tr:last-child th{font-size:10px;padding:4px 10px;border-bottom:2px solid #
           <td class="num"><strong>41,349</strong></td>
           <td class="num">4,000 <span class="est">est.</span></td>
           <td class="num cost">$0.1840</td>
+        </tr>
+        <tr>
+          <td><code>ITM-CL-53.1</code> × <code>ITM-CL-62.1</code>
+            <span class="cluster-tag" style="margin-left:6px">ventilation</span></td>
+          <td class="num">578</td>
+          <td class="num">7,141</td>
+          <td class="num"><strong>7,719</strong></td>
+          <td class="num">4,000 <span class="est">est.</span></td>
+          <td class="num cost">$0.0832</td>
+        </tr>
+        <tr>
+          <td><code>ITM-CL-53.1</code> × <code>ITM-CL-86.1</code>
+            <span class="cluster-tag" style="margin-left:6px">ventilation</span></td>
+          <td class="num">578</td>
+          <td class="num">6,987</td>
+          <td class="num"><strong>7,565</strong></td>
+          <td class="num">4,000 <span class="est">est.</span></td>
+          <td class="num cost">$0.0827</td>
+        </tr>
+        <tr>
+          <td><code>ITM-CL-62.1</code> × <code>ITM-CL-86.1</code>
+            <span class="cluster-tag" style="margin-left:6px">ventilation</span></td>
+          <td class="num">578</td>
+          <td class="num">3,302</td>
+          <td class="num"><strong>3,880</strong></td>
+          <td class="num">4,000 <span class="est">est.</span></td>
+          <td class="num cost">$0.0716</td>
         </tr></tbody>
       <tfoot>
         <tr>
-          <td>Total (3 pairs)</td>
-          <td class="num">1,734</td>
-          <td class="num">95,462</td>
-          <td class="num">97,196</td>
-          <td class="num">12,000</td>
-          <td class="num cost">$0.4716</td>
+          <td>Total (9 pairs)</td>
+          <td class="num">5,202</td>
+          <td class="num">146,574</td>
+          <td class="num">151,776</td>
+          <td class="num">36,000</td>
+          <td class="num cost">$0.9953</td>
         </tr>
       </tfoot>
     </table>
@@ -185,12 +287,12 @@ thead tr:last-child th{font-size:10px;padding:4px 10px;border-bottom:2px solid #
 <tr><td>GPU</td><td class="num">NVIDIA T4 · 16 GB VRAM</td><td style="color:#64748b;font-size:12px">8.1 TFLOPS FP32 · 320 GB/s memory bandwidth</td></tr>
 <tr><td>Model</td><td class="num">Mistral 7B Q4_K_M</td><td style="color:#64748b;font-size:12px">4.1 GB VRAM · leaves 12 GB headroom · near-FP16 quality</td></tr>
 <tr><td>Generation throughput</td><td class="num">~180 tok/sec</td><td style="color:#64748b;font-size:12px">T4 memory-bandwidth bound at Q4 quant</td></tr>
-<tr><td>Prefill (input)</td><td class="num">~8.1s / pair</td><td style="color:#64748b;font-size:12px">32,399 tok avg input ÷ 4,000 tok/s</td></tr>
+<tr><td>Prefill (input)</td><td class="num">~4.2s / pair</td><td style="color:#64748b;font-size:12px">16,864 tok avg input ÷ 4,000 tok/s</td></tr>
 <tr><td>Generation (output)</td><td class="num">~22.2s / pair</td><td style="color:#64748b;font-size:12px">4,000 tok output ÷ 180 tok/s</td></tr>
-<tr><td>Total inference time</td><td class="num">~91s (3 pairs)</td><td style="color:#64748b;font-size:12px">30.3s/pair · sequential; trivially parallelisable</td></tr>
-<tr><td>Cost · on-demand</td><td class="num">$0.0133</td><td style="color:#64748b;font-size:12px">$0.526/hr × 91s</td></tr>
-<tr><td>Cost · spot instance</td><td class="num">$0.0040</td><td style="color:#64748b;font-size:12px">$0.158/hr · ~70% discount · interruptible</td></tr>
-<tr><td>vs. Claude API</td><td class="num">35× cheaper / run</td><td style="color:#64748b;font-size:12px">API $0.4716 → GPU $0.0133 once instance is running</td></tr>
+<tr><td>Total inference time</td><td class="num">~238s (9 pairs)</td><td style="color:#64748b;font-size:12px">26.4s/pair · sequential; trivially parallelisable</td></tr>
+<tr><td>Cost · on-demand</td><td class="num">$0.0348</td><td style="color:#64748b;font-size:12px">$0.526/hr × 238s</td></tr>
+<tr><td>Cost · spot instance</td><td class="num">$0.0104</td><td style="color:#64748b;font-size:12px">$0.158/hr · ~70% discount · interruptible</td></tr>
+<tr><td>vs. Claude API</td><td class="num">29× cheaper / run</td><td style="color:#64748b;font-size:12px">API $0.9953 → GPU $0.0348 once instance is running</td></tr>
 <tr><td>LoRA fine-tune (optional)</td><td class="num">~0.75h · $0.39</td><td style="color:#64748b;font-size:12px">100-example domain adaptation on T4 · one-time cost</td></tr></tbody>
     </table>
     <div class="gpu-note">
@@ -209,8 +311,8 @@ thead tr:last-child th{font-size:10px;padding:4px 10px;border-bottom:2px solid #
     <div class="controls" style="grid-template-columns:1fr 1fr 1fr">
       <div class="control-group">
         <label>Avg. document size (tokens)</label>
-        <input id="avgDocTok" type="number" value="15910" min="500" step="500">
-        <span class="control-note">Default: derived from count_tokens measurements (15,910 tok/doc)</span>
+        <input id="avgDocTok" type="number" value="8143" min="500" step="500">
+        <span class="control-note">Default: derived from count_tokens measurements (8,143 tok/doc)</span>
       </div>
       <div class="control-group">
         <label>Avg. cluster size (docs per topic)</label>
@@ -339,7 +441,7 @@ function calcRow(n, avgDocTok, clusterSize) {
 }
 
 function renderTable() {
-  const avgDocTok   = parseInt(document.getElementById('avgDocTok').value)   || 15910;
+  const avgDocTok   = parseInt(document.getElementById('avgDocTok').value)   || 8143;
   const clusterSize = parseInt(document.getElementById('clusterSize').value) || 3;
   const customN     = parseInt(document.getElementById('customN').value)     || 1000;
   const gpuMode     = document.getElementById('gpuMode').value;
@@ -349,7 +451,7 @@ function renderTable() {
   ns.forEach((n, i) => {
     const r = calcRow(n, avgDocTok, clusterSize);
     const isCustom = i === ns.length - 1;
-    const isBaseline = n === 3;
+    const isBaseline = n === 9;
     const baseline = isBaseline ? ' <span class="baseline">← baseline</span>' : '';
     const gpuAdd   = gpuMode === 'spot' ? r.gpuAddSpot   : r.gpuAddOD;
     const gpuBuild = gpuMode === 'spot' ? r.gpuBuildSpot : r.gpuBuildOD;

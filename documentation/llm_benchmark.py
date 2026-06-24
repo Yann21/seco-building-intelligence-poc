@@ -38,7 +38,7 @@ from dotenv import load_dotenv
 
 ROOT = Path(__file__).parent.parent
 load_dotenv(ROOT / ".env")
-sys.path.insert(0, str(ROOT / "app2-conflict-resolver" / "backend"))
+sys.path.insert(0, str(ROOT / "conflict-resolver" / "backend"))
 
 from typing import Literal
 
@@ -61,7 +61,7 @@ from pipeline.extract import get_extracted
 from pydantic import BaseModel, field_validator
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-LOCAL_CACHE_DIR = ROOT / "app2-conflict-resolver" / "backend" / "cache"
+LOCAL_CACHE_DIR = ROOT / "conflict-resolver" / "backend" / "cache"
 
 
 # ── Shared schema (same as analyze.py) ────────────────────────────────────────

@@ -24,5 +24,5 @@ documentation/data/
 
 # App2 generated artifacts: extraction, pair caches, merged analysis, usage
 # ledger, resolutions. All reproducible via `make analyze`.
-app2-conflict-resolver/backend/data/
+conflict-resolver/backend/data/
 documentation/dist/

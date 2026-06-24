@@ -2,8 +2,8 @@
 
 .PHONY: app2 analyze eval test lint format doc explore deploy deploy-doc help
 
-BACKEND  = app2-conflict-resolver/backend
-FRONTEND = app2-conflict-resolver/frontend
+BACKEND  = conflict-resolver/backend
+FRONTEND = conflict-resolver/frontend
 REMOTE   = hetzner:/home/yann/apps/seco2/frontend/dist/
 DOC_DIST = documentation/dist
 DOC_REMOTE = hetzner:/home/yann/apps/secodoc/dist/

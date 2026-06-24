@@ -33,7 +33,7 @@ from dotenv import load_dotenv
 
 ROOT = Path(__file__).parent.parent
 load_dotenv(ROOT / ".env")
-sys.path.insert(0, str(ROOT / "app2-conflict-resolver" / "backend"))
+sys.path.insert(0, str(ROOT / "conflict-resolver" / "backend"))
 
 from pipeline.analyze import PAIR_PROMPT, SYSTEM_PROMPT
 from pipeline.config import COST_INPUT_PER_TOKEN, COST_OUTPUT_PER_TOKEN, MODEL

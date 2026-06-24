@@ -33,14 +33,14 @@ SERVER_LINKS = {
     "Costing": "/costing",
     "LLM Benchmark": "/benchmark",
     "ITM Explorer": "/explorer",
-    "Quality": "/quality",
+    "Code Quality": "/quality",
 }
 BUILD_LINKS = {
     "README": "index.html",
     "Costing": "costing.html",
     "LLM Benchmark": "benchmark.html",
     "ITM Explorer": "explorer.html",
-    "Quality": "quality.html",
+    "Code Quality": "quality.html",
 }
 
 COVERAGE_JSON = DOC_DIR / "coverage.json"
@@ -101,8 +101,11 @@ def inject_navbar(html: str, navbar: str) -> str:
     return re.sub(r"(<body[^>]*>)", r"\1" + navbar, html, count=1, flags=re.IGNORECASE)
 
 
-def readme_html(navbar: str) -> str:
+def readme_html(navbar: str, rewrite_img_prefix: str | None = None) -> str:
     md_text = (ROOT / "README.md").read_text()
+    if rewrite_img_prefix is not None:
+        # Rewrite image paths like "documentation/foo.png" → "foo.png" for static builds
+        md_text = re.sub(r"!\[([^\]]*)\]\(documentation/([^)]+)\)", rf"![\1](\2)", md_text)
     if HAS_MD:
         body = markdown.markdown(md_text, extensions=["tables", "fenced_code", "toc"])
     else:
@@ -225,6 +228,19 @@ def make_handler(navbar: str):
             elif path == "/quality":
                 self._serve(coverage_html(navbar))
             else:
+                # Serve static assets (images etc.) from documentation/ or repo root
+                for base in (DOC_DIR, ROOT):
+                    candidate = base / path.lstrip("/")
+                    if candidate.is_file():
+                        data = candidate.read_bytes()
+                        ext = candidate.suffix.lower()
+                        ctype = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "gif": "image/gif", "svg": "image/svg+xml"}.get(ext[1:], "application/octet-stream")
+                        self.send_response(200)
+                        self.send_header("Content-Type", ctype)
+                        self.send_header("Content-Length", str(len(data)))
+                        self.end_headers()
+                        self.wfile.write(data)
+                        return
                 self.send_response(404)
                 self.end_headers()
                 self.wfile.write(b"Not found")
@@ -245,10 +261,12 @@ def make_handler(navbar: str):
 
 def build(outdir: Path):
     """Write static HTML files (relative-link navbar) for deployment under /secodoc/."""
+    import shutil
+
     navbar = make_navbar(BUILD_LINKS)
     outdir.mkdir(parents=True, exist_ok=True)
     pages = {
-        "index.html": readme_html(navbar),
+        "index.html": readme_html(navbar, rewrite_img_prefix="documentation/"),
         "costing.html": inject_navbar((DOC_DIR / "costing.html").read_text(), navbar),
         "benchmark.html": inject_navbar((DOC_DIR / "llm_benchmark.html").read_text(), navbar),
         "explorer.html": report_html(navbar),
@@ -257,14 +275,18 @@ def build(outdir: Path):
     for name, html in pages.items():
         (outdir / name).write_text(html, encoding="utf-8")
         print(f"  wrote {outdir / name}")
+    # Copy static assets (images) so relative paths in the README work when deployed
+    for img in DOC_DIR.glob("*.png"):
+        shutil.copy(img, outdir / img.name)
+        print(f"  copied {img.name}")
     print(f"\n✓ Static docs built → {outdir} ({len(pages)} pages)")
 
 
 def serve(port: int):
     navbar = make_navbar(SERVER_LINKS)
     os.chdir(ROOT)
+    socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", port), make_handler(navbar)) as httpd:
-        httpd.allow_reuse_address = True
         print(f"SECO docs → http://localhost:{port}")
         print("  /          README")
         print("  /costing   API costing report")

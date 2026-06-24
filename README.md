@@ -11,7 +11,7 @@
 ## Table of contents
 
 - [🏗️ What problem, for who?](#what-problem-for-whom)
-- [🗺️ Regulatory scope — what this PoC covers and what it doesn't](#regulatory-scope-what-this-poc-covers-and-what-it-doesnt)
+- [🗺️ Regulatory scope](#regulatory-scope)
 - [🎯 Why is this relevant to SECO?](#why-is-this-relevant-to-seco)
 - [📂 Data sources](#data-sources)
 - [🔍 ITM Corpus Explorer](#itm-corpus-explorer)
@@ -23,26 +23,22 @@
     - [🧪 Code quality & test coverage](#code-quality-test-coverage)
     - [🔒 Data confidentiality and LLM deployment tiers](#data-confidentiality-and-llm-deployment-tiers)
     - [💰 API dependency and cost model](#api-dependency-and-cost-model)
-- [🚀 What goes to production tomorrow vs. what gets thrown away](#what-goes-to-production-tomorrow-vs-what-gets-thrown-away)
+- [🚀 What goes to production tomorrow vs. what gets thrown away?](#what-goes-to-production-tomorrow-vs-what-gets-thrown-away)
 - [🔭 3-month vision](#3-month-vision)
+- [🤖 A note on AI-assisted development](#a-note-on-ai-assisted-development)
 
 ---
 
 ## What problem, for who?
 
-Construction projects in Luxembourg touch a web of overlapping regulatory texts — ITM workplace safety prescriptions, PAG urban planning rules, European norms, communal supplements. These documents were written by different authorities at different dates and are never cross-referenced. When values contradict (e.g. emergency lighting test frequency: 3 months in one text, 6 months in another), neither the architect designing the building nor the inspector reviewing it has a systematic way to know — both default to the wrong one, and both carry the liability.
+Construction projects in Luxembourg span a web of overlapping regulatory texts — ITM workplace safety prescriptions, PAG urban planning rules, European norms, communal supplements — written by different authorities at different dates and never cross-referenced. An architect designing to ITM-CL-55.2 may well miss that ITM-ET-32.10 says something different about the same installation.
 
-**The Regulatory Conflict Resolver** surfaces those contradictions automatically. The architect gets an answer at design time, before submitting a dossier that will get rejected. The SECO inspector gets the same view when reviewing a project, with a workflow to document their resolution. That documentation is the longer-term product: a **vetted precedent database**, built from real decisions by domain experts, that future architects and inspectors can query instead of re-litigating the same ambiguity from scratch.
+The **Regulatory Conflict Resolver** directly addresses those specific pain points in an architect's workflow: surface contradictions early leveraging AI's breadth, give the architect a suggestion at design time, and let experts record their resolutions as **vetted precedents** that compounds in institutional value over time.
 
-The vetting step is what makes it reliable. The AI flags conflicts and proposes the most restrictive interpretation; a domain expert reviews and documents the final call. Only that reviewed resolution enters the precedent base. The system gets more useful with every decision recorded.
-
-The **ITM Corpus Explorer** (in the technical docs) answers the question the resolver raises next: *which documents should we be comparing?* It scrapes the entire ITM corpus, embeds every text-extractable document, and lays it out as a semantic map — so the conflict clusters the resolver runs on are chosen from evidence, not guesswork. It also quantifies what's *not* yet machine-readable (the OCR backlog), which is itself a finding.
-
-A **PAG Zone Map** ([live](https://yannhoffmann.com/seco1)) is also included — it addresses a related pain (understanding what's allowed on a parcel before starting design) but sits outside the AI/ML scope of this PoC.
 
 ---
 
-## Regulatory scope — what this PoC covers and what it doesn't
+## Regulatory scope
 
 A commercial building project in Luxembourg touches at least four distinct regulatory layers, each controlled by a different authority:
 
@@ -53,17 +49,15 @@ A commercial building project in Luxembourg touches at least four distinct regul
 | Regulatory bodies | **ITM** (workplace safety), **CGDIS** (fire safety), Administration des Bâtiments Publics | Operational prescriptions, periodic inspections, authorizations | Construction / operation |
 | Municipal | Commune, PAG, PAP, communal supplements | Zoning, land use, urban form | Permit |
 
-These layers are never cross-referenced in a single document. An architect must navigate all of them simultaneously, and conflicts exist not just *within* a layer but *across* layers — a corridor width compliant under Eurocode structural loads may still violate an ITM evacuation prescription.
+The PoC intentionally restricts itself to the ITM layer. ITM is the primary regulatory interface for workplace and construction site safety in Luxembourg, and intra-ITM conflicts are already numerous enough to demonstrate the approach. In addition, that scope was validated by a domain practitioner on an actual project demonstrating the value of the application.
 
-**This PoC deliberately scopes to the ITM layer only** — specifically the ITM-CL/ET prescriptions types published by the Inspection du Travail et des Mines. This is the right entry point for SECO because: (1) ITM documents are publicly available and machine-readable, (2) ITM is the primary regulatory interface for construction site safety, and (3) intra-ITM conflicts are already numerous and consequential enough to demonstrate the approach.
-
-The full scope worth building toward: a conflict resolver that spans ITM × CGDIS × Eurocodes National Annexes × communal supplements — plus a visual map of which authority controls what, at which project phase, so inspectors and architects have a single reference for the entire regulatory stack.
+**Limitations:** although the dream would be a universal resolver that spans ITM × CGDIS × Eurocodes National Annexes × communal supplements — the current technology requires a significant amount of expert input that keeps on increasing the more domains are added. In other words, AI scales, expertise does not, and the ITM corpus strikes the right balance between value creation and feasibility.
 
 ---
 
 ## Why is this relevant to SECO?
 
-SECO's core value is independent technical control. A conflict between two regulations is exactly the kind of ambiguity that generates liability exposure for clients and work for inspectors. Surfacing it early — at design stage rather than at the CTC visit — shortens feedback loops and prevents rework. The resolution workflow (expert documents their decision) also starts building an auditable knowledge base of how conflicts have been resolved in practice, which is the longer-term product.
+SECO's core value is independent technical control. Its inspectors navigate the same regulatory web as architects, and a vetted precedent database is directly useful to them — a resolution documented by one SECO expert is available to every other. Surfacing conflicts at design stage also shortens the feedback loop for clients, which reflects well on the inspection process.
 
 ---
 
@@ -71,16 +65,17 @@ SECO's core value is independent technical control. A conflict between two regul
 
 | Source | Used in | Why |
 |---|---|---|
-| 9 ITM PDFs across 3 clusters — lighting (CL-55.2, ET-32.10, CL-144.1), ventilation (CL-53.1, CL-62.1, CL-86.1), ascenseurs (CL-82.1, CL-83.1, CL-230.2) — (public ITM website) | Conflict Resolver | Three topic clusters with known intra-cluster overlaps; picked from the corpus map, not guesswork |
-| PAG Zonage + NQ-PAP (GeoJSON, geoportail.lu open data) | App 1 | Official national zoning dataset, refreshed by communes; the only authoritative source for parcel classification |
-| RGD 28 juillet 2011 (zone rules, coded manually) | App 1 | The grand-ducal regulation defining zone types; static enough to encode as a lookup table for the PoC |
-| Full ITM corpus — 454 ITM-CL/ET/SST PDFs (scraped from itm.public.lu) | ITM Explorer | The complete public ITM prescription set; used to map the corpus and pick conflict clusters from evidence |
+| 9 ITM PDFs across 3 clusters — lighting (CL-55.2, ET-32.10, CL-144.1), ventilation (CL-53.1, CL-62.1, CL-86.1), ascenseurs (CL-82.1, CL-83.1, CL-230.2) — ([ITM website](https://itm.public.lu)) | Conflict Resolver | Three expert-picked topic clusters with known intra-cluster overlaps to illustrate the problem |
+| Full ITM corpus for exploration — 454 ITM-CL/ET/SST PDFs (scraped from [itm.public.lu](https://itm.public.lu)) | ITM Explorer | The complete public ITM prescription set; used to map the corpus and pick conflict clusters from evidence |
 
 ---
 
 ## ITM Corpus Explorer
 
-The Conflict Resolver demonstrates conflict detection on hand-picked clusters. The obvious next question — *which clusters are worth running?* — needs a view of the whole corpus. The [ITM Explorer page](https://yannhoffmann.com/secodoc/explorer.html) in the technical docs builds it: a cached pipeline that scrapes itm.public.lu, downloads every French ITM-CL/ET/SST PDF, extracts text with pdfplumber, derives a short title per document via an LLM, embeds with OpenAI `text-embedding-3-small`, reduces to 2D with UMAP, and renders an interactive report (Plotly semantic map + a stacked documents-per-year histogram + sortable inventories).
+The ITM Explorer was built in addition to the Conflict Resolver to have a better understanding of the corpus. It has surfaced insights about series (CL/ET/SST) clusters and overlap. 
+If development continues, it would be a central tool for observability and debugging.
+
+On the technical side: a cached pipeline scrapes itm.public.lu, downloads every French ITM-CL/ET/SST PDF, extracts text with pdfplumber, derives a short title per document via an LLM, embeds with OpenAI `text-embedding-3-small`, reduces to 2D with UMAP, and renders an interactive report (Plotly semantic map + a stacked documents-per-year histogram + sortable inventories).
 
 **The corpus, quantified:**
 
@@ -96,7 +91,7 @@ The Conflict Resolver demonstrates conflict detection on hand-picked clusters. T
 
 2. **The OCR gap is concentrated in the legacy series.** Of the 128 scanned documents, **101 are CL, 14 ET, 13 SST** — ~90% are the old CL/ET texts (over half the ET series is un-digitized), versus only 8% of the modern SST series. The gap isn't random; it sits exactly where the supersession risk is highest. That makes OCR a prioritized backlog, not a uniform chore.
 
-**Known limitation (documented in the report):** embeddings use each document's first ~8 000 characters (≈2 000 tokens), so a long document's position reflects its opening, not its full content. The production fix is chunk-and-average; called out rather than hidden.
+<img src="documentation/itm_histogram.png" width="100%" alt="ITM corpus — documents by publication year">
 
 ---
 
@@ -186,7 +181,7 @@ make test        # pytest + coverage  → writes documentation/coverage.json
 | `pipeline/analyze` — pairing/merge covered, live LLM call not | 41% |
 | **Total — 33 tests, offline, no API key** | **74%** |
 
-The uncovered lines are concentrated in the live LLM call path (`run_pair`), which by design isn't exercised offline — the golden set covers its *output* instead. The measured figure is rendered live on the **Quality** page of the doc server (`make doc`).
+The uncovered lines are concentrated in the live LLM call path (`run_pair`), which by design isn't exercised offline — the golden set covers its *output* instead. Full per-module breakdown with coverage bars is on the [Code Quality](https://yannhoffmann.com/secodoc/quality.html) page of the doc site.
 
 Formatting and linting are unified under **ruff** (one fast tool replacing black, isort, flake8/pycodestyle/pyflakes, pyupgrade and bugbear), configured in `pyproject.toml`:
 
@@ -209,7 +204,7 @@ The current production path sends document text to the Anthropic API. For a tech
 
 Tier 2 (CPU) is the weakest option in practice. Benchmarking phi3.5 (3.8B) against the actual ITM documents shows it cannot reliably handle 32k-token French legal inputs: it found 2 conflicts across 3 pairs vs. 9 for Claude, hallucinated one conflict from an adjacent domain (egress geometry rather than lighting), and ran at ~1.7 tok/s — roughly 10 minutes per pair, or 30 minutes for a 3-document cluster. Acceptable only when confidentiality is the hard constraint and latency is not.
 
-Tier 3 is the right balance for an internal SECO deployment: a private GPU instance (or on-premises RTX-class workstation) delivers near-API quality at ~40× lower marginal cost, with no external data transfer, and ~30s per pair vs. 10 min on CPU. Mistral 7B at Q4_K_M quantization fits in 4.1 GB VRAM and handles long French regulatory text well. See `documentation/costing.html` for the full breakdown including g4dn.xlarge spin-up cost projections.
+Tier 3 is the right balance for an internal SECO deployment: a private GPU instance (or on-premises RTX-class workstation) delivers near-API quality at ~40× lower marginal cost, with no external data transfer, and ~30s per pair vs. 10 min on CPU. Mistral 7B at Q4_K_M quantization fits in 4.1 GB VRAM and handles long French regulatory text well. Full results including side-by-side conflict detection output are on the [LLM Benchmark](https://yannhoffmann.com/secodoc/benchmark.html) page.
 
 ### API dependency and cost model
 
@@ -219,14 +214,14 @@ All live token usage and cost is logged to `data/usage_log.jsonl` and exposed at
 
 ---
 
-## What goes to production tomorrow vs. what gets thrown away
+## What goes to production tomorrow vs. what gets thrown away?
 
 **Ship tomorrow:**
 - The conflict detection and resolution workflow — the core loop works and produces actionable output
 - The pairwise cache architecture — it's the right model for an incrementally growing document corpus
 
 **Throw away:**
-- The static `zone_rules.py` lookup table in App 1 — it needs to be replaced by parsing the actual PAG texts per commune, not a hand-coded approximation
+- The [PAG Zone Map](https://yannhoffmann.com/seco1) — built early to explore the problem space, addresses a real pain (what's allowed on a parcel before starting design) but sits outside the AI/ML scope; the static `zone_rules.py` lookup would need to be replaced by actual per-commune PAG parsing before it's production-worthy
 - `resolutions.json` flat file — replace with a proper database (SQLite at minimum) with versioning and audit trail
 - The 65% word-overlap threshold for quote grounding — it should be tuned on a labelled set once real false-positive/negative rates are known
 
@@ -238,12 +233,20 @@ The resolution workflow already captures the most valuable long-term asset: expe
 
 Three months of work: structured document ingest pipeline (OCR + chunking), PostgreSQL-backed precedent store, RAG query interface, basic auth to scope resolutions by team.
 
-### To implement: document versioning and freshness tracking
+### Document versioning and freshness tracking
 
-The core value proposition depends on the corpus staying current — a conflict resolver running on outdated regulations gives wrong answers confidently. This needs two things:
+The corpus must stay current — a periodic crawler comparing remote PDF hashes against stored `content_hash` values would detect updates automatically, re-extract, and invalidate only the affected cluster's pair caches (C−1 calls, not a full rebuild). The UI would surface document dates and flag stale ones. The corpus map already shows where to start: the legacy CL/ET series.
 
-1. **Version detection**: each document in `pipeline/docs_meta.py` carries a `date` field, but there is no mechanism to detect when ITM publishes an updated version. The right approach is a periodic crawler against the ITM public document URLs (already stored in `DOCS_META`) that compares the remote file hash against the cached `content_hash`. A change triggers re-extraction and invalidates all pair caches for that document's cluster — and the corpus map already shows where to point it first (the legacy CL/ET series).
+---
 
-2. **Freshness surface**: the UI should show document dates and flag documents older than a configurable threshold (e.g. >2 years without a known update). This gives inspectors a signal that the conflict analysis may be based on superseded text — especially important for chantier regulations which are revised more frequently than general prescriptions.
+## A note on AI-assisted development
 
-This is where the pairwise cache architecture pays off: updating one document in a 10-document cluster triggers C−1 new API calls, not a full rebuild.
+This project was built with significant AI assistance (Claude code) including for this very documentation but also the implementation, the analysis, and deployment scripts.
+AI for code and project development allowed me to cover an unprecedented amount of ground and get familiar with a complex topic in a very short amount of time.
+
+The same question about reliability of AI for the conflict resolver is present at the scale of the application itself. Issues like code quality, scalability, 
+architecture, reliability immediately come to mind. Although the project in its current form is still within human reach, careful thought would have 
+to go into solving software scalability potentially via modularity and good architecture, were it to be expanded.
+
+With all these caveats in mind, I have confidence in the reliability of the application but more than that its usefulness, its ability to bring value to the end user. 
+I was willing to accept the trade-off of iterating faster with perhaps less control if it means that the application solves a real problem. 🌻
