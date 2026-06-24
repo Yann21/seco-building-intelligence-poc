@@ -106,6 +106,8 @@ def readme_html(navbar: str, rewrite_img_prefix: str | None = None) -> str:
     if rewrite_img_prefix is not None:
         # Rewrite image paths like "documentation/foo.png" → "foo.png" for static builds
         md_text = re.sub(r"!\[([^\]]*)\]\(documentation/([^)]+)\)", rf"![\1](\2)", md_text)
+        # Also rewrite HTML <img src="documentation/..."> tags
+        md_text = re.sub(r'(<img\s[^>]*src=")documentation/([^"]+)"', r'\1\2"', md_text)
     if HAS_MD:
         body = markdown.markdown(md_text, extensions=["tables", "fenced_code", "toc"])
     else:
