@@ -1,11 +1,6 @@
 # Building Intelligence PoC — SECO
 
-Two apps demonstrating AI-augmented regulatory intelligence for Luxembourg construction inspections.
-
-| | App | Live |
-|---|---|---|
-| 🗺️ | **App 1 — PAG Zone Map** — click a parcel, get applicable zoning rules and SECO control points | [yannhoffmann.com/seco1](https://yannhoffmann.com/seco1) |
-| ⚡ | **App 2 — Conflict Resolver** — AI detects contradictions between ITM regulations, with citations and expert resolution workflow | [yannhoffmann.com/seco2](https://yannhoffmann.com/seco2) |
+**Live demo — Regulatory Conflict Resolver:** [yannhoffmann.com/seco2](https://yannhoffmann.com/seco2) — AI detects contradictions between ITM regulations, with citations and expert resolution workflow
 
 **Technical docs** (ITM Corpus Explorer · costing analysis · LLM benchmark · test coverage): [yannhoffmann.com/secodoc](https://yannhoffmann.com/secodoc)
 
@@ -37,11 +32,11 @@ Two apps demonstrating AI-augmented regulatory intelligence for Luxembourg const
 
 Construction projects in Luxembourg touch a web of overlapping regulatory texts — ITM workplace safety prescriptions, PAG urban planning rules, European norms, communal supplements. These documents were written by different authorities at different dates and are never cross-referenced. When values contradict (e.g. emergency lighting test frequency: 3 months in one text, 6 months in another), the architect or site engineer has no systematic way to know, and defaults to the wrong one.
 
-**App 2 — Regulatory Conflict Resolver** surfaces those contradictions automatically. The target user is a SECO inspector or an architect preparing a building permit dossier: someone who needs to know *which value to apply* when two binding texts disagree.
+**The Regulatory Conflict Resolver** surfaces those contradictions automatically. The target user is a SECO inspector or an architect preparing a building permit dossier: someone who needs to know *which value to apply* when two binding texts disagree.
 
-**App 1 — PAG Zone Map** addresses a related pain: understanding what's allowed on a given parcel before even starting design. It maps the full PAG zoning of Luxembourg and surfaces the applicable rules, required documents, and SECO control points on a single click.
+The **ITM Corpus Explorer** (in the technical docs) answers the question the resolver raises next: *which documents should we be comparing?* It scrapes the entire ITM corpus, embeds every text-extractable document, and lays it out as a semantic map — so the conflict clusters the resolver runs on are chosen from evidence, not guesswork. It also quantifies what's *not* yet machine-readable (the OCR backlog), which is itself a finding.
 
-The **ITM Corpus Explorer** (in the technical docs) answers the question App 2 raises next: *which documents should we be comparing?* It scrapes the entire ITM corpus, embeds every text-extractable document, and lays it out as a semantic map — so the conflict clusters App 2 runs on are chosen from evidence, not guesswork. It also quantifies what's *not* yet machine-readable (the OCR backlog), which is itself a finding.
+A **PAG Zone Map** ([live](https://yannhoffmann.com/seco1)) is also included — it addresses a related pain (understanding what's allowed on a parcel before starting design) but sits outside the AI/ML scope of this PoC.
 
 ---
 
