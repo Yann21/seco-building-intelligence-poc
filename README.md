@@ -1,6 +1,16 @@
 # Building Intelligence PoC — SECO
 
-**Live demos:** [seco1 – PAG Zone Map](https://yannhoffmann.com/seco1) · [seco2 – Conflict Resolver](https://yannhoffmann.com/seco2)
+Three apps demonstrating AI-augmented regulatory intelligence for Luxembourg construction inspections.
+
+| | App | Live |
+|---|---|---|
+| 🗺️ | **App 1 — PAG Zone Map** — click a parcel, get applicable zoning rules and SECO control points | [yannhoffmann.com/seco1](https://yannhoffmann.com/seco1) |
+| ⚡ | **App 2 — Conflict Resolver** — AI detects contradictions between ITM regulations, with citations and expert resolution workflow | [yannhoffmann.com/seco2](https://yannhoffmann.com/seco2) |
+| 🔍 | **App 3 — ITM Corpus Explorer** — semantic map of 454 ITM documents (UMAP + sortable inventory + OCR backlog) | [yannhoffmann.com/secodoc/explorer.html](https://yannhoffmann.com/secodoc/explorer.html) |
+
+**Technical docs** (costing analysis · LLM benchmark · test coverage): [yannhoffmann.com/secodoc](https://yannhoffmann.com/secodoc)
+
+**Run locally:** `make app2` · `make test` · `make eval`
 
 ---
 
@@ -10,7 +20,7 @@
 - [🗺️ Regulatory scope — what this PoC covers and what it doesn't](#regulatory-scope-what-this-poc-covers-and-what-it-doesnt)
 - [🎯 Why is this relevant to SECO?](#why-is-this-relevant-to-seco)
 - [📂 Data sources](#data-sources)
-- [🗺️ App 3 — ITM Corpus Explorer](#app-3-itm-corpus-explorer)
+- [🔍 App 3 — ITM Corpus Explorer](#app-3-itm-corpus-explorer)
 - [⚙️ Technical decisions and trade-offs](#technical-decisions-and-trade-offs)
   - [🔗 App 2 architecture: pairwise document index](#app-2-architecture-pairwise-document-index)
   - [🧱 Pipeline structure & data flow](#pipeline-structure-data-flow)
@@ -65,7 +75,7 @@ SECO's core value is independent technical control. A conflict between two regul
 
 | Source | Used in | Why |
 |---|---|---|
-| ITM-CL-55.2, ITM-ET-32.10, ITM-CL-144.1 (PDFs, public ITM website) | App 2 | Three lighting regulations from the same authority with known overlaps — good test case for the conflict detection approach |
+| 9 ITM PDFs across 3 clusters — lighting (CL-55.2, ET-32.10, CL-144.1), ventilation (CL-53.1, CL-62.1, CL-86.1), ascenseurs (CL-82.1, CL-83.1, CL-230.2) — (public ITM website) | App 2 | Three topic clusters with known intra-cluster overlaps; picked from App 3's corpus map, not guesswork |
 | PAG Zonage + NQ-PAP (GeoJSON, geoportail.lu open data) | App 1 | Official national zoning dataset, refreshed by communes; the only authoritative source for parcel classification |
 | RGD 28 juillet 2011 (zone rules, coded manually) | App 1 | The grand-ducal regulation defining zone types; static enough to encode as a lookup table for the PoC |
 | Full ITM corpus — 454 ITM-CL/ET/SST PDFs (scraped from itm.public.lu) | App 3 | The complete public ITM prescription set; used to map the corpus and pick conflict clusters from evidence |
@@ -207,7 +217,7 @@ Tier 3 is the right balance for an internal SECO deployment: a private GPU insta
 
 ### API dependency and cost model
 
-Token counts are measured with the Anthropic `count_tokens` API (non-billable) and costs extrapolated across corpus sizes. See [`documentation/costing.html`](documentation/costing.html) for the full breakdown — per-document token counts, pair-by-pair cost table, and extrapolation to 100-document indices.
+Token counts are measured with the Anthropic `count_tokens` API (non-billable) and costs extrapolated across corpus sizes. See [yannhoffmann.com/secodoc/costing.html](https://yannhoffmann.com/secodoc/costing.html) for the full breakdown — per-document token counts, pair-by-pair cost table, and extrapolation to 100-document indices.
 
 All live token usage and cost is logged to `data/usage_log.jsonl` and exposed at `GET /api/usage`.
 
